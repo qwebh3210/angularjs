@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        理解过滤器的作用，
+        学习过滤器在angularjs表达式中的使用（filter），
+        学习过滤器在js代码中的使用（$filter），
+        学习如何注册自定义过滤器（$filterProvider）以及模块提供的快捷注册自定义过滤器的api的使用：filter
+    -->
+    <meta charset="UTF-8">
+    <title>filter&$filter</title>
+</head>
+<body>
+    <div ng-app="myApp">
+        <!--过滤器是用于格式化或筛选数据的。
+        以下都是用angularjs表达式进行调用过滤器的，ng-bind、ng-model调用过滤器同理，
+        但是ng-model双向绑定的数据如果经过滤器处理，在view层是编辑不了的。-->
+        <div ng-controller="firstController">
+            <!--数字的格式化-->
+            <div>
+                <!--ng-model双向绑定的数据如果经过滤器处理，在view层是编辑不了的-->
+                <input ng-model="num | number"/>
+                <!--四舍五入保留3位小数，并且从个位开始每3位用'，'分隔-->
+                <p>{{num | number}}<!--100,000.000--></p>
+                <!--四舍五入保留n位小数（保留3位是默认的，也可以自己指定保留几位），并且从个位开始每3位用'，'分隔-->
+                <p>{{num | number:2}}<!--100,000.00--></p>
+                <!--四舍五入保留2位小数，并在数字开头加上美元符号'$'-->
+                <p>{{num | currency}}<!--$100,000.00--></p>
+                <!--四舍五入保留2位小数，并在数字开头加上指定字符串('$'是默认的，也可以自己指定要以什么字符串打头)-->
+                <p>{{num | currency:'rmb'}}<!--rmb100,000.00--></p>
+            </div>
+            <!--时间格式化-->
+            <div>
+                <!--格式化日期（年月日时分秒星期）-->
+                <p>{{today}}<!--"2019-06-17T19:57:04.008Z"--></p>
+                <p>{{today | date:'medium'}}<!--Jun 18, 2019 3:57:04 AM--></p>
+                <p>{{today | date:'short'}}<!--6/18/19 3:58 AM--></p>
+                <p>{{today | date:'mediumDate'}}<!--Jun 18, 2019--></p>
+                <p>{{today | date:'shortDate'}}<!--6/18/19--></p>
+                <p>{{today | date:'mediumTime'}}<!--3:58:56 AM--></p>
+                <p>{{today | date:'shortTime'}}<!--3:58 AM--></p>
+                <p>{{today | date:'fullDate'}}<!--Tuesday, June 18, 2019--></p>
+                <p>{{today | date:'longDate'}}<!--June 18, 2019--></p>
+                <!--筛选并格式化各时间分量-->
+                年：
+                <p>{{today | date:'y'}}<!--2019--></p>
+                <p>{{today | date:'yy'}}<!--19--></p>
+                <p>{{today | date:'yyyy'}}<!--2019--></p>
+                月：
+                <p>{{today | date:'M'}}<!--6--></p>
+                <p>{{today | date:'MM'}}<!--06--></p>
+                <p>{{today | date:'MMM'}}<!--Jun--></p>
+                <p>{{today | date:'MMMM'}}<!--June--></p>
+                日：
+                <p>{{today | date:'d'}}<!--18--></p>
+                <p>{{today | date:'dd'}}<!--18--></p>
+                星期：
+                <p>{{today | date:'EEE'}}<!--Tue--></p>
+                <p>{{today | date:'EEEE'}}<!--Tuesday--></p>
+                时：
+                <p>{{today | date:'H'}}<!--4--></p>
+                <p>{{today | date:'HH'}}<!--04--></p>
+                <p>{{today | date:'h'}}<!--4--></p>
+                <p>{{today | date:'hh'}}<!--04--></p>
+                分：
+                <p>{{today | date:'m'}}<!--13--></p>
+                <p>{{today | date:'mm'}}<!--13--></p>
+                秒：
+                <p>{{today | date:'s'}}<!--29--></p>
+                <p>{{today | date:'ss'}}<!--29--></p>
+                <p>{{today | date:'ss.sss'}}<!--29.071--></p>
+                <!--最常用的时间格式化-->
+                <p>{{today | date:'y-MM-dd HH:mm:ss'}}<!--2019-06-18 04:17:00--></p>
+            </div>
+            <!--筛选数组-->
+            <div>
+                <!--筛选出数组的前5个元素-->
+                <p>{{arr | limitTo:'5'}}<!--[1,2,3,4,5]--></p>
+                <!--筛选出数组的后5个元素-->
+                <p>{{arr | limitTo:'-5'}}<!--[3,4,5,6,7]--></p>
+            </div>
+            <!--格式化为大写或小写-->
+            <div>
+                <!--格式化为小写-->
+                <p>{{msg | lowercase}}<!--hello world!--></p>
+                <!--格式化为大写-->
+                <p>{{msg | uppercase}}<!--HELLO WORLD!--></p>
+            </div>
+            <!--从字符串、数组中筛选出含有指定字符的字符、元素，筛选不分大小写，筛选出的所有字符、元素将组成新的数组返回。-->
+            <div>
+                <!--当数组的元素是对象时，只要对象的任一属性中含有"h"，该对象就能被筛选出来。-->
+                <p>{{city | filter:"h"}}<!--[{"id":"shanghai","name":"上海"},{"id":"guangzhou","name":"广州"}]--></p>
+                <!--当数组的元素是对象时，想只对其中的一个属性进行筛选，写法如下，这时候，即使name属性含有字符"h"，也筛选不出来。
+                注意：后面连续的三个}}}不能写在一起，第一个}后至少要留一个以上空格，否则angular会识别不出。-->
+                <p>{{city | filter:{id:"h"} }}<!--[{"id":"shanghai","name":"上海"},{"id":"guangzhou","name":"广州"}]--></p>
+            </div>
+            <!--将字符串、数组格式化为排序后的字符、数组元素，并由它们组成新的数组返回。默认或"+"为升序,"-"为降序。-->
+            <div>
+                <!--对于元素是对象的数组，如果不指明排序字段，将按照元素在数组的下标顺序排序。-->
+                <p>{{city | orderBy:"id"}}<!--[{"id":"beijing","name":"北京"},{"id":"guangzhou","name":"广州"},{"id":"shanghai","name":"上海"}]--></p>
+                <!--先筛选后排序-->
+                <p>{{city | filter:{id:"h"} | orderBy:"-id"}}<!--[{"id":"shanghai","name":"上海"},{"id":"guangzhou","name":"广州"}]--></p>
+                <p>{{arr | orderBy:"-"}}<!--[7,6,5,4,3,2,1]--></p>
+                <p>{{msg | orderBy:"+"}}<!--[" ","!","d","e","H","l","l","l","o","o","r","W"]--></p>
+            </div>
+            <!--格式化为json（json过滤器一般不用于页面显示数据，因为即使用json过滤了，数据还是会单行展示，没有起到格式化的效果；所以json一般用于控制台调试代码。）-->
+            <div>
+                <p>{{city | json}}<!--[ { "id": "beijing", "name": "北京" }, { "id": "shanghai", "name": "上海" }, { "id": "guangzhou", "name": "广州" } ]--></p>
+            </div>
+            <!--自定义过滤器1——函数过滤器（只能过滤字符串、数组）：过滤掉name属性为"上海"的元素-->
+            <div>
+                <p>{{city | filter:checkName}}<!--[{"id":"beijing","name":"北京"},{"id":"guangzhou","name":"广州"}]--></p>
+            </div>
+            <!--自定义过滤器2——filter过滤器（可以过滤任何数据类型）。filter过滤器通过$filterProvider服务的register方法
+            （在模块注册时同时注册过滤器）或者注册模块提供的api：filter（在模块注册后在注册过滤器）来注册过滤器。而且，与
+            函数过滤器不同，filter过滤器传入的参数是整个对象（如整个数组、整条字符串，而非数组中的每个对象、字符串的每个组成元素）。-->
+            <div>
+                <p ng-repeat="item in city | filterId">{{item.id}}&nbsp;&nbsp;{{item.name}}<!--beijing  北京--></p>
+                <p>{{msg | filterMsg}}<!--Hello World! Nice to meet you!--></p>
+                <p>{{today | filterToday}}<!--Sat Jun 22 2019 11:12:31 GMT+0800 (中国标准时间) 是个好日子！--></p>
+            </div>
+        </div>
+    </div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+/*在模块注册时，可以通过依赖注入把$filterProvider服务引入进来，通过它可以在模块注册的回调函数中注册自定义过滤器，
+当然，注册模块提供了更简单的api来注册自定义过滤器，而且这个过程不在模块注册的回调函数中定义，而是模块注册方法外，
+这个api就是filter，它等价于$filterProvider.register。
+filter过滤器与函数过滤器的区别：filter过滤器可以过滤所有数据类型；而且传入filter过滤器的参数是整个对象（如整个数组、整条字符串，
+而非数组中的每个对象、字符串的每个组成元素）。
+PS：传条件过滤：过滤器return的function第一个参数是待过滤的数据，第二个参数是过滤条件。页面使用方法为 | 过滤器名:条件参数*/
+var app = angular.module("myApp",[],function($filterProvider){
+    $filterProvider.register('filterId',function(){
+        return function(arr){
+            var newArr = [];
+            angular.forEach(arr,function(a){
+                if(-1 != a.id.indexOf("beijing")){
+                    newArr.push(a);
+                }
+            });
+            return newArr;
+        }
+    });
+
+    $filterProvider.register('filterMsg',function(){
+        return function(msg){
+            return msg+" Nice to meet you!";
+        }
+    });
+});
+
+app.filter('filterToday',function(){
+    return function(today){
+        return today+" 是个好日子！"
+    }
+});
+
+app.controller("firstController",function($scope,$filter){
+    $scope.num = 99999.9999;
+    $scope.today = new Date();
+    $scope.arr = [1,2,3,4,5,6,7];
+    $scope.msg = "Hello World!";
+    $scope.city = [
+        {
+            id:"beijing",
+            name:"北京"
+        },
+        {
+            id:"shanghai",
+            name:"上海"
+        },
+        {
+            id:"guangzhou",
+            name:"广州"
+        }
+    ];
+
+    /*所有的过滤器都可以在控制器中使用：
+    首先在控制器的回调方法函数中依赖注入$filter服务，然后根据如下语法进行过滤：
+    $filter('过滤规则')(要过滤的数据)*/
+    console.log($filter('number')($scope.num));/*100,000.000*/
+    /*json过滤器常用于代码调试，跟直接打印相比，json过滤以后数据直接展开，去掉了不太关注的元数据信息，可读性更强。*/
+    console.log($filter('json')($scope.city));
+    console.log($scope.city);
+    /*格式化日期，'y-MM-dd'等同于'yyyy-MM-dd'。*/
+    console.log($filter('date')(new Date(),'y-MM-dd'));/*2020-02-24*/
+
+    /*自定义过滤器：
+    自定义过滤器只能对字符串、数组过滤，先声明一个函数为过滤器，然后页面通过语法{{要过滤的数据 | filter:过滤器函数}}
+    调用过滤器。如果是字符串，页面会把每个字符作为参数传给函数，如果是数组的话，页面会把每个元素作为参数传给函数。
+    然后自行判断，返回false的话就是被过滤掉的元素，返回true的话就是保留下来的元素。这些保留下来的元素组成新的数组返回给
+    调用方。*/
+    $scope.checkName = function(obj){
+        if("上海" == obj.name){
+            return false;
+        }else{
+            return true;//return obj;也是可以的
+        }
+    }
+})
+</script>
+</body>
+</html>

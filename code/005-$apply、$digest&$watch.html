@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        理解什么叫脏检查，
+        学习$apply、$digest的使用以及它们的区别，
+        理解监听（脏检查原理：比对前后监听值），
+        学习$watcher的使用
+    -->
+    <meta charset="UTF-8">
+    <title>$apply、$digest&$watch</title>
+</head>
+<body>
+    <div ng-app="myApp">
+        <div ng-controller="firstController">
+            <div>{{date}}</div>
+            <div ng-bind="date"></div>
+            <input type="text" style="width:350px" value="" ng-click="dateRefresh()" ng-model="date"/>
+            </br>
+            <input type="text" style="width:350px" value="" ng-click="dateRefresh()" ng-model="name"/>
+        </div>
+
+        <div ng-controller="secondController">
+            <input type="text" value="" ng-model="name"/>
+        </div>
+    </div>
+    <div id="age"></div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    /*原生js也可以实现脏检查，只是比较麻烦，既要操作model层，也要操作view层。*/
+    //方式一：
+    var obj = {
+        age:18,
+        setAge:function(prop,val){
+            obj.prop = val;
+            document.querySelector("#age").innerHTML = val;
+        }
+    }
+    setInterval(function(){
+        obj.setAge("age",obj.age++);
+    },1000);
+
+    //方式二：
+    /*var age = 18;
+    setInterval(function(){
+        document.querySelector("#age").innerHTML = age++;
+    },1000)*/
+</script>
+<script type="text/javascript">
+    angular.module("myApp",[])
+
+    .controller("firstController",function($scope) {
+
+        var index = 2;
+        $scope.date = new Date();
+        $scope.name = "zhangsan";
+
+        /*页面绑定了model层属性date和name，并设置model层这两个属性每秒钟都会更新一次数据。
+        当没有用$apply的时候，可以看到页面view层的数据是不会发生变化的，这是因为虽然model的数据改变了，但是view层并不知道，
+        要通知view层数据已变更，需要用到脏检查的机制，比对某时刻model层数据和之前的数据是否一样，如果不一样，就更新view层数据。
+        默认情况下，ng属性（包括angularjs表达式{{}}）描述的元素绑定的属性是会在UI事件（如输入框的值改变事件、点击事件等，
+        注意，这里的点击事件只能是ng-click事件，而不能是onclick事件）、异步请求时触发脏检查，这里在两个输入框绑定了ng-click事件，
+        绑定的方法为空方法，只是为了触发脏检查，实验结果是，无论点击哪个输入框，都会让页面绑定的date和name都发生改变，
+        也就是说脏检查检查的是所有的view层用到的属性。
+        如果想让脏检查不受限于UI事件和异步请求时才触发，就需要用到$apply服务了，但凡需要用到脏检查，只要使用$apply服务就行了，
+        $apply定义的方法可以是个空方法，这里把model层属性更新的代码写在$apply方法里只是习惯性写法、也便于理解，其实要写在其他
+        地方也是没问题的，反正我$apply服务每隔1秒就执行一次，也就是每隔1秒就脏检查一次，这时把model层的date和name的值与
+        现在view层的值进行比对，有变化了就改变view层的值。*/
+        /*$digest也是脏检查服务，确切地说，$digest才是脏检查服务，$apply实现脏检查，也是调用了$digest服务，只是多了异常处理的判断。
+        另外，$digest的写法跟$apply也有一点区别：
+        $digest是没有参数的，只能写成$scope.$digest();
+        $apply可以有参数，也可以没有，所以写法可以是$scope.$apply(function(){});也可以是$scope.$apply();
+        正因为如此，我们更推荐使用$apply,不仅更安全，也更为灵活。*/
+        /*具体是如何脏检查的，$scope一开始就会对view层的所有属性进行监听，即使是同一个属性，如果在view层有多次绑定，就会有多个
+        监听，这里view层绑定了3个date、1个name，那么一共就有4个监听，打印$scope，在$$watchers属性中可以找到view层被监听的
+        属性，它是一个数组，下标从0开始，顺序跟页面属性的排序是相反的。特别提醒：所谓的监听都是监听的view层数据。
+        脏检查时就是拿监听属性目前view层的值和目前model层的值进行比对，有变化就通知view层更新数据。
+        注意：$apply和$digest只能写在setInterval、setTimeout中，否则会报错。*/
+        setInterval(function () {
+            //方式一：使用$digest实现脏检查
+            /*$scope.date = new Date();
+            $scope.name = "zhangsan" + index++;
+            $scope.$digest();*/
+
+            //方式二：使用$apply实现脏检查
+            /*PS：无论方式一还是方式二，数据的改变都要写在脏检查之前（$apply写在回调函数里，其实也是先执行方法体，
+            最后再进行脏检查），这样才会在执行脏检查的时候发现model层数据的变化。这里用的是setInterval，即使数据变化写在
+            脏检查之后也能看到view层的变化，因为1秒后又会进行脏检查，但是如果是setTimeout那就会导致view层同步不到数据了。*/
+            $scope.$apply(function(){
+                $scope.date = new Date();
+                /*这里我们把"zhangsan"换成了$scope.name来做个实验，如果打开页面后不管，过了3秒，会显示zhangsan234，我们的
+                * model层数据每隔1秒都在改变，并通过脏检查同步到view层，但是此时view层也没闲着，假如我们在第2秒显示了zhangsan23
+                * 后，把3删掉，过了1秒后，会看到显示为zhangsan24，显而易见，数据确实是双向绑定的，而且不管是在model层，还是在view
+                * 层，谁在最后修改，当前的数据就以谁的为准。*/
+                $scope.name = $scope.name + index++;
+            })
+        }, 1000);
+    })
+
+    .controller("secondController",function($scope) {
+          $scope.name = "lisi";
+          var count = 0;
+          $scope.obj = {
+              id:"01",
+              data:"100"
+          }
+
+          /*默认情况下，$scope只会监听view层用到的所有属性，而且只是监听，当监听的属性发生改变时，并不会主动去做一些事情，
+          有时候我们想监听的数据不仅仅是view层用到的，当监听的属性发生改变时，我们也想要书写自己特定的业务逻辑，这时候，
+          就可以用下面的$watch服务了（也就是主动监听，主动监听会额外再加一个监听属性，这里view层原本用到了name，$scope一
+          开始就会有一个name属性的监听，下面又对name属性主动监听了一次，那么总共就有两个name属性的监听）：
+          $watch服务的第一个参数是要监听的model层变量名，第二个参数是变量的值发生改变时的回调方法，回调方法的第一个参数
+          是改变后的新值，第二个参数是改变前的旧值（命名随意）。
+          值得注意的是：页面第一次加载时，会调用一次主动监听对象的回调函数，而且新值和旧值是一样的，也就是实际上并没有发生
+          值改变，只是angular的机制是这样设定的，如果不需要这一次的执行，可以做判断，当新值等于旧值时，return就好了。
+          特别提醒：所谓监听都要同时满足两个条件：1）view层数据的变化（脚本导致的变化也可以）；2）model层也有实际的变化
+          （view层数据成功双向绑定，之所以这么说，是因为在之后的form表单学习时，会发现未通过验证的view层数据是无法双向绑定
+          到model层的，model层也就无变化，也就不会有监听事件发生，所以，本质上来说，监听的newValue和oldValue还是model层的
+          数据）。*/
+          /*$scope.$watch("name",function(newValue,oldValue){
+              console.log(newValue + "/" + oldValue);
+              if(10 < count){
+                  $scope.name = "已经变更过10次了";
+              }else{
+                  count++;
+              }
+          });*/
+
+          /*当监听的是对象而不是属性时，需要第三个参数，不写的话默认为false。我们知道对象是引用类型的，它是一个内存地址的引用，
+          当对象的属性值发生改变时，对象还是那个对象，因没为它的引用地址有发生改变，也就不会触发值改变事件。如果想要对象任何
+        一个属性值改变就触发值改变事件的话，需要把第三个参数设置为true，表示以对象属性的改变为改变，不写或写false都是
+        以引用地址的改变为改变。
+          当然，只监听对象的一个属性也是可以的，如监听obj.data。*/
+          $scope.$watch("obj",function(newValue,oldValue){
+              console.log(newValue);
+              console.log(oldValue);
+          },true);
+
+          /*值得注意的是，这里view层并未用到obj，只是model层更改了一次，也会促发监听事件，那是因为firstController中有一个脏检查，
+          它会检查所有的变量，不管view层有没有使用过，这里的obj就顺带被检查了（obj没在view层使用不代表在view层没有），发现
+          与之前view层存在的obj不一样，所以就促发了obj的监听事件。*/
+          setTimeout(function(){
+              $scope.obj.data = "200";
+          },1000)
+
+    });
+
+    var dateRefresh = function(){
+
+    }
+</script>
+</body>
+</html>

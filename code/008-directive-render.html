@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        理解指令的概念及angular三种内置指令，
+        学习使用angular常用内置渲染指令：ng-init、ng-bind、ng-bind-template、ng-repeat、ng-include
+    -->
+    <meta charset="UTF-8">
+    <title>渲染指令</title>
+</head>
+<body ng-app="myApp">
+    <!--什么是指令：
+    可以用来扩展html标签，增加申明式语法来实现想做的任何事，用对应用有特殊意义的元素和属性来替换一般的html标签。
+    angular三种内置指令：
+    1）渲染指令：用来初始化页面元素或数据，如：ng-bind、ng-include等；
+    2）事件指令：用来触发页面事件，如：ng-click、ng-change等；
+    3）节点指令：用来描述节点属性的指令，如：ng-class，ng-show等。-->
+    <div ng-controller="myController">
+        <!--ng-bind和ng-bind-template都是单向绑定数据，只是ng-bind绑定的是去掉"{{}}"的angularjs表达式，ng-bind-template绑定的
+        是包含"{{}}"的angularjs表达式-->
+        <p ng-bind="1+1"></p>
+        <p ng-bind-template="{{1+1}}"></p>
+
+        <!--ng-init相当于在view层声明了cityArr这个变量的值，如果model层之前没有初始化cityArr这个变量，那么ng-init就初始化了
+        cityArr；如果model层之前已经初始化cityArr这个变量，那么ng-init就在view层赋予了cityArr新的值，然后通过双向绑定，
+        把view层的值绑定到model层。之后通过页面点击事件来改变model层的cityArr，又可以看到view层的cityArr实时改变了。-->
+        <ul ng-init="cityArr = ['北京','上海','广州']">
+            <!--ng-repeat提供了一些常用的循环服务参数：$index（当前元素下标，从0开始）、$first（当前元素是否为头元素）、
+            $middle（当前元素是否为中间元素）、$last（当前元素是否为尾元素）-->
+            <li ng-repeat="city in cityArr">
+                <span>下标：{{$index}}；</span>
+                <span>是否头元素：{{$first}}；</span>
+                <span>是否中间元素：{{$middle}}；</span>
+                <span>是否最后元素：{{$last}}；</span>
+                <span>{{city}}</span>
+            </li>
+        </ul>
+        <input type="button" value="city变更" ng-click="changeCityArr()"/>
+
+        <!--ng-include用来引入子页面，有两种写法：
+        1）ng-include="'子页面路径'";
+        2）ng-include src="'子页面路径'";
+        PS：两种写法的子页面路径都要加上引号。-->
+        <div ng-include='"../vendor/html/bottom.html"'>
+        </div>
+        <div ng-include src="'../vendor/html/bottom.html'">
+        </div>
+    </div>
+
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    angular.module("myApp",[])
+
+    .controller("myController",function($scope){
+        $scope.cityArr = ['北京','上海','深圳'];
+        console.log($scope.cityArr);
+        /*通过延迟1秒打印发现数据已发生变化，在dom渲染后ng-init定义的view层数据绑定到了model层，覆盖掉了原来model层的数据。*/
+        setTimeout(function(){
+            console.log($scope.cityArr);
+        },1000);
+        $scope.changeCityArr = function(){
+            console.log($scope.cityArr);
+            $scope.cityArr = ['北京','上海','香港'];
+            console.log($scope.cityArr);
+        }
+    });
+</script>
+</body>
+</html>

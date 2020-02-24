@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        学习使用angular常用内置节点指令：ng-style、ng-class、ng-class-even、ng-class-odd、ng-show、ng-hide、ng-switch、
+        ng-src、ng-href、ng-if
+    -->
+    <meta charset="UTF-8">
+    <title>节点指令</title>
+    <style type="text/css">
+        .bigText {font-size:20px}
+        .blueText {color:blue}
+        .greenText {color:green}
+    </style>
+</head>
+<body>
+<div ng-app="myApp">
+    <div ng-controller="myController">
+        <!--ng-style用来描述元素样式，和style写法稍有不同，样式必须用对象表示，可以直接写样式对象，也可以写model层定义的变量-->
+        <p ng-style="defaultStyle">小红</p>
+        <!--ng-class用于动态赋予元素class属性，语法：{class属性:表达式}。
+        ng-class的多种用法：
+        1）由表达式决定是否赋予单个属性。如：{redCaret:orderType == 'id'}；
+        2）由同一个表达式决定是否同时赋予多个属性。如：{'redCaret big':orderType == 'id'}；
+        3）由同一个表达式决定为真时赋予某些属性，为假时赋予另一些属性。如：
+        {true:'redCaret big',false:'yellowCaret'}[orderType == 'id']或{'redCaret big':orderType == 'id','yellowCaret':orderType != 'id'};
+        4）由不同的表达式决定不同属性在不同条件下是否赋予。如：{'redCaret big':orderType == 'id','yellowCaret':orderType == 'name'};
+        5）由多个条件决定是否赋予某些属性。如：{redCaret:orderType == 'id' && order == '-'}。-->
+        <ul ng-class="{bigText:status}" ng-init="cityArr = ['北京','上海','广州']">
+            <!--ng-class-odd和ng-class-even都是用在ng-repeat中的，当遍历行为奇数行时，显示ng-class-odd的class属性，
+            当遍历行为偶数行时，显示ng-class-even的class属性。
+            注意：ng-class-odd和ng-class-even描述的class必须用引号括起来。-->
+            <li ng-class-odd="'greenText'" ng-class-even='"blueText"' ng-repeat="city in cityArr">
+                {{city}}
+            </li>
+        </ul>
+        <button type="button" ng-click="changeStatus()">切换字体大小</button>
+        <!--ng-show和ng-hide分别表示当其绑定的表达式为真时显示、隐藏；为假时隐藏、显示。-->
+        <p ng-show="status">小黄</p>
+        <p ng-hide="status">小蓝</p>
+        <!--ng-switch对某一表达式的多种可能值进行判断，当表达式切换为某值时，显示相应数据。具体用法如下：-->
+        <ul ng-switch on="status">
+            <li ng-switch-when="true">
+                true
+            </li>
+            <li ng-switch-when="false">
+                false
+            </li>
+        </ul>
+        <!--ng-href用来给a标签赋予超链接地址，效果等同于href。
+        注意：资源地址是变量的话一定要用{{}}括起来。-->
+        <a ng-href="{{imgUrl}}">
+            <!--ng-src用以描述图片资源文件地址，与src="{{imgSrc}}"不同的是，即使资源地址不存在，也不会在控制台报404。
+            注意：资源地址是变量的话一定要用{{}}括起来。-->
+            <img ng-src="{{imgSrc}}"/>
+        </a>
+        <!--ng-if用来判断表达式，为真则添加dom元素、为假则删除dom元素。
+        ng-if跟ng-show、ng-hide的区别就是ng-if是添加或删除dom元素，ng-show、ng-hide是显示、隐藏dom元素。-->
+        <p ng-if="status">
+            status is true
+        </p>
+    </div>
+</div>
+
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    angular.module("myApp",[])
+
+    .controller("myController",function($scope){
+        $scope.defaultStyle = {color:"red"};
+        $scope.status = false;
+        $scope.imgSrc = "https://www.baidu.com/img/bd_logo1.png";
+        $scope.imgUrl = "https://www.baidu.com/";
+
+        $scope.changeStatus = function(){
+            $scope.status = !$scope.status;
+        }
+    })
+</script>
+</body>
+</html>

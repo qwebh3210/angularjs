@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--理解angularjs的依赖注入-->
+    <meta charset="UTF-8">
+    <title>依赖注入</title>
+</head>
+<body>
+
+<script type="text/javascript">
+    /*
+        js中的依赖注入有两种方式：
+        方式一.将被依赖的对象作为参数传入到依赖它的对象上；
+        方式二.将被依赖的对象作为全局变量（至少是依赖它的对象的上一层变量）。
+    */
+
+    var inject = function(){
+        this.getName = function(){
+            return "zhangsan";
+        }
+    }
+
+    /*方式一：*/
+    var depend = function(injectObj){
+        document.writeln(injectObj.getName() + "<br/>");
+    }
+
+    var dependObj1 = new depend(new inject());
+
+    /*方式二：*/
+    var depend = function(){
+        document.writeln(injectObj.getName() + "<br/>");
+    }
+
+    var injectObj = new inject();
+    var dependObj2 = new depend();
+
+    /*
+        angularjs中的依赖注入概念并不完全等同于js中的依赖注入，
+        可以说它是js依赖注入两种方式的结合，把可能用到的参数（如$scope,$http,$apply...）定义为全局变量（至少是某个controller上一层变量），
+        把方法A需要用到的变量（如$scope）定义到方法A的形参中，
+        把方法B需要用到的变量（如$scope,$http）定义到方法B的形参中，
+        而不需要把所有变量都定义到形参中来，即需要什么就获取什么，形参在使用过程中就会通过依赖注入获得该全局变量（至少是某个controller上一层变量）。
+        这样做的好处是：最大程度上把依赖和被依赖的对象进行了解耦，需要用到的时候才注入进来，同时保证了可用性和高效性。
+        例如：
+        var firstController = function($scope){
+            $scope.name = "张三";
+            $scope.age = "20";
+        }
+        这里$scope无需申明，只要引入了angularjs类库就会有，$scope作用域比该方法要大，
+        这里function中用到了$scope，所以形参中也加入了$scope，angularjs会通过依赖注入把$scope对象注入到function中，供其使用
+    */
+</script>
+</body>
+</html>

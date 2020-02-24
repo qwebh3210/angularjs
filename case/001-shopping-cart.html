@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        购物车
+    -->
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../vendor/css/bootstrap.min.css"/>
+    <title>购物车</title>
+</head>
+<body ng-app="cartApp">
+<div class="container" ng-controller="cartController">
+    <!--ng-show用来表示是否显示-->
+    <!--ng-show、ng-hide除了用true和false，也可以用非0和0判断，非0表示true，0表示false-->
+    <table class="table" ng-show="cart.length">
+        <thead>
+            <tr>
+                <th>产品编号</th>
+                <th>产品名字</th>
+                <th>购买数量</th>
+                <th>产品单价</th>
+                <th>产品总价</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!--ng-repeat指令用来循环model层的数据-->
+            <tr ng-repeat="item in cart">
+                <td>{{item.id}}</td>
+                <td>{{item.name}}</td>
+                <td>
+                    <button type="button" class="btn btn-primary" ng-click="reduce(item.id)">-</button>
+                        <input type="text" value="" ng-model="item.quantity"/>
+                    <button type="button" class="btn btn-primary" ng-click="add(item.id)">+</button>
+                </td>
+                <td ng-bind="item.price"></td>
+                <td>{{item.price * item.quantity}}</td>
+                <td><button type="button" ng-click="remove(item.id)" class="btn btn-danger">移除</button></td>
+            </tr>
+            <tr>
+                <td>总购买价</td>
+                <!--angularjs表达式、ng-model、ng-bind等不只可以绑定变量，也可以绑定函数。-->
+                <td>{{totalPrice()}}</td>
+                <td>总购买数量</td>
+                <td ng-bind="totalQuantity()"></td>
+                <td colspan="2">
+                    <!--ng-click也是支持直接写表达式的-->
+                    <button type="button" ng-click="cart = []" class="btn btn-danger">清空购物车</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <!--ng-hide用来表示是否隐藏-->
+    <p ng-hide="cart.length">您的购物车空空如也</p>
+</div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    angular.module("cartApp",[])
+
+    .controller("cartController",function($scope){
+        $scope.cart = [
+            {
+                id:1000,
+                name:'iphone5s',
+                quantity:3,
+                price:4300
+            },
+            {
+                id:3300,
+                name:'iphone5',
+                quantity:30,
+                price:3300
+            },
+            {
+                id:232,
+                name:'imac',
+                quantity:4,
+                price:23000
+            },
+            {
+                id:2000,
+                name:'ipad',
+                quantity:5,
+                price:6900
+            }
+        ];
+
+        /*$scope不仅可以定义model层数据，也可以定义model层函数。
+        view层调用的话，可以用angularjs表达式、ng-bind、ng-model，规则和绑定数据一样，只是绑定函数的话，记得要加上'()',
+        如angularjs表达式绑定该函数：{{totalPrice()}}*/
+        /*计算总购买价*/
+        $scope.totalPrice = function () {
+            var total = 0;
+            /*angular.forEach用来循环数据，第一个参数是用来循环的数据，第二个参数是对该数据的处理函数，函数的参数就是被循环
+            参数的每一个对象*/
+            angular.forEach($scope.cart,function(item){
+                total += item.price * item.quantity;
+            });
+            return total;
+        }
+
+        /*计算总购买数量*/
+        $scope.totalQuantity = function (){
+            var total = 0;
+            angular.forEach($scope.cart,function(item){
+                total += parseInt(item.quantity);
+            });
+            return total;
+        }
+
+        /*移除商品*/
+        $scope.remove = function(id){
+            /*forEach的第二个参数function有个可选参数key，表示正在循环元素的下标（从0开始）。*/
+            angular.forEach($scope.cart,function (item,key) {
+                if(id == item.id){
+                    /*splice方法的参数解释：
+                    第一个参数（必填），要删除的下标（从0开始）；
+                    第二个参数（必填），往后删除多少个元素，如果不填就是往后删除所有元素；
+                    第三个参数（可选），在删除的位置加入新的元素。*/
+                    $scope.cart.splice(key,1);
+                    return;
+                }
+            });
+        }
+
+        /*商品数增加1*/
+        $scope.add = function(id){
+            angular.forEach($scope.cart,function(item){
+                if(id == item.id){
+                    item.quantity += 1;
+                    return;
+                }
+            });
+        }
+
+        /*商品数减少1*/
+        $scope.reduce = function(id){
+            angular.forEach($scope.cart,function(item,key){
+               if(id == item.id){
+                   if($scope.cart[key].quantity > 1){
+                       /*这里用另外一种方法来写减法，也能达到一样的效果。*/
+                       $scope.cart[key].quantity--;
+                   }else{
+                       var returnKey = confirm("是否从购物车内删除该产品！");
+                       if(returnKey){
+                           /*同一个作用域的函数调另一个函数也一定要在函数前面加上作用域$scope，否则会找不到报函数未定义。*/
+                           $scope.remove(id);
+                       }
+                   }
+                   return;
+               }
+            });
+        }
+
+        /*监听view层的cart（实际上就是为了监听cart中每个对象的quantity属性），当cart发生改变时，格式化购买数量，使其不出现
+        非数字字符。*/
+        $scope.$watch('cart',function(newValue){
+            angular.forEach(newValue,function(item){
+                /*全局匹配把非数字替换为空字符串。
+                ^有两个意思：
+                在[]内表示否定，这里就是表示非数字，等价于\D；
+                在除[]内的其他地方，表示以...开头。*/
+                item.quantity = parseInt(item.quantity.toString().replace(/[^\d]/g,''));
+                if(isNaN(item.quantity)){
+                    item.quantity = 1;
+                }
+            });
+        },true);
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        学习ng-bind的使用，
+        区分ng-bind，angularjs表达式，ng-model的异同和各自的使用场景，
+        理解js的单线程和浏览器的多线程工作原理。
+    -->
+    <meta charset="UTF-8">
+    <title>ng-bind</title>
+</head>
+<body>
+    <div ng-app="myApp">
+        <div ng-controller="myController">
+            <!--demo1：model层的name值可以显示在view层，但当在view层改变name值时，不能使其他两个name值跟着变，
+            说明angularjs表达式{{}}是model->view单向绑定的，所以{{}}一般用于向用户单纯的展示数据，而不涉及交互数据，
+            因此{{}}一般情况下，也不会赋值在input、select、textarea等交互元素上，更多是赋值在div、span、p等
+            单纯展示数据的元素上。
+            通过alert阻塞线程的实验，可以看到angularjs表达式'{{name}}'会以字符串的形式原样输出，用户体验不好。-->
+            <input type="text" value="{{name}}"/>
+            <div>{{name}}</div>
+            <input type="text" value="{{name}}"/>
+            </br>
+
+            <!--demo2：ng-bind是禁止在input、select、textarea等交互元素上使用的（强行绑定不会有任何效果）;
+            虽然无法在交互元素上使用，但是我们可以通过开发者模式强行改变其view层的name值，发现第二个div的name值
+            没有随之发生变化，说明ng-bind也是model->view单向绑定的，所以只适合单纯展示数据，而不用于交互数据。
+            通过alert阻塞线程的实验，可以看到页面阻塞时是不会有任何值的，这样用户体验比angularjs表达式好了很多。-->
+            <div ng-bind="name"></div>
+            <div ng-bind="name"></div>
+
+            <!--demo3：ng-model是禁止在div、span、p等单纯用于展示数据的元素上使用的（强行绑定不会有任何效果）；
+            最开始两个输入框都会显示zhangsan，当改变其中一个view层的name值时，另一个也跟着改变了，说明ng-model是
+            model<->view双向绑定的。
+            通过alert阻塞线程的实验，可以看到页面阻塞时，只显示两个空的输入框，用户体验比angularjs表达式好了很多。-->
+            <input type="text" value="{{name}}" ng-model="name"/>
+            </br>
+            <input type="text" value="" ng-model="name"/>
+
+            <!--总结：
+            1）angularjs表达式：可用于展示元素（推荐）、也可用于交互元素（不推荐）；单向绑定；网速不好时，表达式原样输出，用户体验不好。
+            2）ng-bind：只能用于展示元素；单向绑定；网速不好时，不输出任何东西，用户体验好。
+            3）ng-model：只能用户交互元素；双向绑定；网速不好时，不输出任何东西，用户体验好。
+            PS：ng-bind和ng-model绑定的元素类型不一样，不会出现同时使用的情况，但angularjs表达式有可能和ng-bind或ng-model
+            同时使用在同一个元素上（虽然正常情况下不会这么做）。当angularjs表达式和ng-bind同时使用时，网速不好的情况下，
+            表达式会原样输出；当angularjs表达式和ng-model同时使用时，数据是双向绑定的，网速不好时，表达式会原样输出。-->
+        </div>
+    </div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    angular.module("myApp",[])
+
+    .controller('myController',function($scope){
+        $scope.name = "zhangsan";
+        $scope.age = "29";
+    });
+
+    /*由于js是单线程的，有时候网速慢，导致angularjs.js下载还未完成，当js打算执行模块和控制器注册时，发现读不懂，然后把它在
+    执行队列的位置稍稍后移了，先执行下面可以马上读懂的代码，等执行队列到了模块注册，再次尝试执行，此时，如果angularjs.js
+    被浏览器的另一个线程下载完毕了（虽然js是单线程的，但是浏览器是多线程的，如：javascript引擎线程、界面渲染线程、浏览器
+    事件触发线程、http请求线程...），那么就能顺利执行了，否则继续将这段看不懂的代码在执行队列中后移，如此循环，直到能成功
+    执行为止。
+    在这里，我们模拟网速较慢的情况：还没读懂模块和控制器注册的代码，先执行下面的alert，值得注意的是，alert之后，如果不关闭
+    弹框，js线程是会被挂起的，也就是会一直阻塞线程，这个时候我们可以观察到页面在未完成模块和控制器注册时是什么样子的，也就
+    是用户网络条件不好的情况下用户短暂看到的真实情景。
+    很显然，angularjs表达式在这样的场景下会在页面显示'{{name}}'，而没有解析成实际的值；ng-bind会显示为空；ng-model也会显示
+    为空。从用户体验来讲，angularjs表达式是不如ng-bind和ng-model的。*/
+    alert("阻塞线程");
+</script>
+</body>
+</html>

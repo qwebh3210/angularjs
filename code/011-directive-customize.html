@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        学习在模块注册的回调函数中用$compileProvider服务自定义指令，或者用模块提供的快捷方式api：.directive去自定义指令，
+        学习自定义指令中的以下常用配置属性：restrict、template、templateUrl、replace、transclude、priority、terminal、
+        compile、link、controller、controllerAs、scope、require。
+    -->
+    <meta charset="UTF-8">
+    <title>自定义指令</title>
+</head>
+<body>
+<div ng-app="myApp">
+    <script type="text/ng-template" id="template2">
+        <p>hello {{name}} {{title}}</p>
+    </script>
+
+    <div ng-controller="firstController">
+        <!--元素指令-->
+        <custom-tags>替换前的字符</custom-tags>
+        <!--类指令-->
+        <div class="custom-tags">替换前的字符</div>
+        <!--属性指令：自定义指令用作属性是最为推荐的，这样可以兼容ie8-->
+        <div custom-tags>替换前的字符</div>
+        <!--注释指令：这里要注意下注释指令的格式，中间的空格是绝对不能省的。-->
+        <!-- directive:custom-tags -->
+
+        <custom-tags2></custom-tags2>
+
+        <span custom-tags3><h4>替换前的字符</h4></span>
+
+        <div custom-tags3 custom-tags4>替换前的字符</div>
+
+        <ul>
+            <li ng-repeat="user in users" custom-tags5 custom-tags6></li>
+        </ul>
+
+        <custom-tags7 desc-attr="desc" name-attr="name" title-attr="{{title}}"></custom-tags7>
+    </div>
+
+    <div ng-controller="secondController">
+        <custom-tags7></custom-tags7>
+    </div>
+</div>
+
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    angular.module("myApp",[],function($compileProvider){
+    /*模块注册的回调函数中，用$compileProvider服务的directive方法来注册自定义指令，或者用模块提供的快捷方式api：.directive
+    也可以注册自定义指令，指令命名规则为驼峰命名法，如注册时命名为xxxYyy，那么在页面使用时就是xxx-yyy。*/
+    /*解读自定义指令的各个属性：
+    1）restrict：表明自定义指令的限制使用范围，有以下4种：E-元素指令；C-类（class）指令；A-属性指令（最为推荐，可以兼容ie8）；
+    M-注释指令。限制范围可以同时赋予单个值或多个值，也可以为空或不写，为空或不写时默认值为ECA，如果页面使用时超出限制范围会报错。
+    2）template：页面上的指令需要被替换成的模板内容。当然，也支持作用域内的变量。
+    3）templateUrl：有时候不想把模板直接写在template属性上，可以在外部写一个模板文件，然后用templateUrl引入页面地址；也可
+    以在页面某个地方用<script type="text/ng-template" id="xxx">定义一个模板，并赋予该模板一个id，然后用templateUrl引入模板
+    id。
+    PS：template和templateUrl二者取其一或者二者都没有，也就是同一个页面元素最多只能有一个渲染模板，另外一种情况，就是同一
+    页面元素会包含多个指令，这些指令之中也最多只能有一个template或templateUrl，否则会报错。当然，指令不一定是用于
+    渲染页面的，有时候是为了执行一段业务逻辑，如后面讲到的compile属性指定的回调函数，这时候就不需要template或templateUrl了。
+    4）replace：默认为false，即模板替换的是自定义指令所依附的元素内的html内容，不包含元素本身，其中，注释指令本身并不存在
+    元素，也不会替换为任何内容；而设置为true后，连同元素本身都会被模板替换，注释元素也会被整个替换，而且，为true时要求模板
+    必须以某个标准html标签为最外层，否则替换不成功。*/
+    $compileProvider.directive("customTags",function(){
+        return {
+            restrict:"ECAM",
+            template:"<p>{{desc}}</p>",
+            /*templateUrl:"../vendor/html/template.html",*/
+            replace:true,
+            compile:function(){
+                console.log("自定义指令customTags被执行了");
+            }
+        }
+    })
+})
+
+/*注册模块也提供了注册自定义指令的快捷方式api：.directive*/
+/*这里自定义了一个名为customTags2的自定义指令，它把模板id为template2的内容替换到调用该指令的地方。*/
+.directive("customTags2",function(){
+    return {
+        restrict:"ECAM",
+        templateUrl:"template2",
+        replace:true
+    }
+})
+
+/*解读自定义指令的各个属性：
+5）transclude：默认为false，设置为true时，执行指令用模板进行渲染，并保留原来的元素内容（不包括自定义指令元素或指令描述的
+元素本身），原来的内容被保留在模板中ng-transclude指令所描述的元素内。ng-transclude描述的元素不能是模板的最外层元素，如：
+template:"<span ng-transclude>替换后的字符</span>"，这样模板的新数据将会被老数据覆盖掉；并行的最外层也是不行的，如：
+template:"<div><p>替换后的字符</p></div><span ng-transclude></span>"，这样会直接导致报错，因为模板的设计就是为了一对一替换
+页面原来的元素，如果是这种形式的模板等于是原来这个层级的节点派生出了2个同层级的节点，这样是不符合设计理念的。*/
+.directive("customTags3",function(){
+    return {
+        restrict:"ECAM",
+        template:"<div><p>替换后的字符</p><span ng-transclude></span></div>",
+        replace:true,
+        transclude:true,
+        priority:0
+    }
+})
+
+/*解读自定义指令的各个属性：
+6）priority：默认为0，表示指令执行的优先级，ng-repeat的优先级为1000，是angular内置指令中优先级最高的，虽然通过优先级可以
+决定指令的执行顺序，但是同一个元素多个指令中只能有一个template或templateUrl是不可调和的，它们优先级一样也好，某个先执行也好，
+最终该报错的还是会报错，这时候要么就让这些指令只保留一个template，要么就用下面讲到的terminal属性来终结（前提是它的优先级
+高于跟它template冲突的其他指令）。
+7）terminal：默认为false，设置为true时，表示页面的某个元素执行多个指令时，只会执行terminal为true的指令及优先级大于或等于该
+指令的指令，而优先级小于该指令的指令将不会被执行。这里customTags4指令的优先级为1，customTags3的优先级为0，所以customTags3
+不会被执行，template冲突的问题也就不会发生，从而不会导致报错。
+PS：terminal的作用范围只在它所描述的指令所在的元素上，其他元素上的指令优先级比它的指令优先级小一样会被执行，而不受其影响。*/
+.directive("customTags4",function(){
+    return {
+        restrict:"ECAM",
+        template:"<h5>替换后的字符</h5>",
+        replace:true,
+        transclude:true,
+        priority:1,
+        terminal:true
+    }
+})
+
+/*解读自定义指令的各个属性：
+8）complie：执行指令的回调函数。它有三个参数：tElement代表当前被执行指令所在的元素的jQuery对象（完成模板替换后的元素，
+这里原来的customTags5指令在li元素上，但替换后customTags5指令转移到了div元素上，tElement就是div元素的jQuery对象）；
+tAttrs代表tElement元素上的属性（原元素的属性是会被替换后的元素继承下来的，且指令作为属性是要转换为驼峰命名的，如
+tAttrs.ngRepeat = "user in users"）；transclude代表指令的transclude属性，但是这里的属性值并不是true或false，当未定义或为
+false时，这里transclude为undefined，当为true或其他能保留原数据的值时，transclude为内置的一个函数。这三个参数不是必须要
+写入function的形参中的，需要用到哪个就写哪个。
+compile中的代码是指令编译阶段执行的代码，在页面中被定义了几次就只会执行几次（这里页面只定义了一次，虽然ng-repeat优先级高于
+customTags5，且循环了两次，每个li元素上都有customTags5指令，但是真正的执行顺序并不是完全等到ng-repeat执行完成再执行customTags5的，
+而是先执行ng-repeat的compile函数，再执行customTags5的compile函数，接着完成ng-repeat的循环，最后完成customTags5的模板替换工作，
+可以看出，指令的编译阶段是有最高优先级的，即使指令的优先级很低，但是也会在所有指令执行实际的工作前先执行编译阶段代码，所以
+下面的compile三参数的打印和追加div节点只会执行一次，节点产生多个并赋予不同的值，那是ng-repeat和customTags5之后才做的。
+当然，如果其他元素也用了该指令，相应的编译次数也会增加）。
+这里的编译代码不包括compile中return的对象，因为这个对象其实就是link属性的函数。当定义了compile属性，link属性也就失效了，
+写link没有任何意义，因为在有compile的情况下，会以compile中return的对象作为link的函数对象。此外，自定义指令时，不return对象，
+而是return一个function，实质上也就是返回一个postLink。
+9）link：link包含了preLink和postLink两个回调函数，如果只写一个，格式为link:function(){},代表的是postLink函数，如果写两个，
+格式为link:{pre:function(){},post:function(){}}，当然，写两个的时候，也可以只定义其中一个。
+不管是preLink还是postLink，都有三个基本参数，分别是scope（ng-repeat为每个循环元素开辟的一个作用域，只有在循环元素中的指令的link
+属性才能拿到这个作用域；非循环元素中的指令的link属性中的scope指的是它所在controller的$scope）,iElement（当前循环的元素的
+jQuery对象，compile、preLink、postLink的iElement有可能不一样，因为子节点指令处于不同的阶段，导致子节点的节点和数据有可能
+不一样，同时当前指令在不同阶段对自己也有可能有dom操作，所以iElement就有可能不一样）,iAttrs（当前循环的元素的属性），可根
+据实际需要写入形参。
+PS：之后在讲controller属性时会讲到link的第四个参数，它不是基本的参数，形参名也是可变的，详情在controller属性中。另外，link
+中的参数是有顺序的，要用到后面的参数，前面的参数是不能少的（即使没用到）。
+preLink、postLink的执行顺序是先执行第一次循环的preLink，再执行第一次循环的postLink，然后才是第二次循环的preLink、postLink。
+preLink的作用是在该指令已完成模板渲染并绑定了数据之后，数据渲染之前为子节点准备一些数据，此时子节点已完成模板渲染并绑定了
+数据，但还没有进行数据渲染（如果有子节点且子节点有指令的话）（即子节点的指令的compile已执行，但link还没有执行）；
+postLink的作用是在子节点已完成数据渲染后（虽然完成了渲染，但页面不会马上刷出来，它会等待最外层数据渲染完成再实际显示到页面），
+对子节点进行操作（这个时候操作子节点是最好的，因为子节点的渲染数据由可能包含了dom元素，在这之前操作的子节点结构是不完整的），
+postLink执行完后，该节点的数据才会渲染完成，而后才是子节点的数据渲染停止等待，把预先准备好的数据实际反馈到页面，所以，也可以
+在postLink中为子节点准备数据。
+PS：link中函数的参数名称不是固定的，可以自定义命名，它代表什么只跟该参数的顺序有关，如第一个参数常规用scope，命名为s也
+一样可以用。*/
+.directive("customTags5",function(){
+    return {
+        restrict:"ECAM",
+        template:"<div>{{user.name}}</div>",
+        replace:true,
+        compile:function(tElement,tAttrs,transclude){
+            console.log(tElement);
+            console.log(tAttrs);
+            console.log(transclude);
+            /*append直接追加字符串或者jQuery对象的字符串都是可以的。*/
+            /*这里用了{{user.count}}，但是user是没有count这个属性的，实际上这里只是append了一段源码，并没有去编译它，真正编译
+            它的时间是在执行了link函数之后，即下面的return部分，可以看到postLink中对当前循环的user增加了count这个属性。*/
+            tElement.append(angular.element("<div>{{user.name}} {{user.count}}</div>"));
+
+            var count = 0;
+
+            /*只需要postLink的写法。
+            return function(){
+                console.log("postLink执行");
+            }*/
+
+            /*需要preLink和postLink的写法（如果只需要preLink可以在return的对象中只写pre属性）。*/
+            return {
+                pre:function(scope,iElement,iAttrs){
+                    console.log(iElement);
+                    console.log(iAttrs);
+                    console.log(scope.user.name + "的preLink执行");
+                },
+                post:function(scope,iElement,iAttrs){
+                    scope.user.count = count + 1;
+                    count++;
+                    console.log(scope.user.name + "的postLink执行");
+                }
+            }
+        }
+        /*link属性也是同时支持对象和函数两种写法的，作用和compile属性的return部分一样。*/
+        /*link:function(){
+            console.log("postLink执行");
+        }*/
+    }
+})
+
+/*自定义指令直接返回一个function实际上也是postLink。
+这种写法不支持return一个对象，只能return一个函数，即无法写一个preLink。*/
+.directive("customTags6",function(){
+    return function(){
+        console.log("postLink执行");
+    }
+})
+
+/*customTags2和customTags7做对比：
+当它们处在不同的controller中，它们自能访问各自controller的作用域中的变量;
+当同一个指令处在不同的controller中，指令在不同的地方渲染时访问的作用域各不相同，在哪用就是访问哪的作用域。我们已经知道link
+中的scope参数代表的就是指令所在controller的$scope（指令处在循环元素中除外，此时是独立的作用域，不过可以通过scope的向上查找
+机制获取所在controller的变量），姑且做个实验，把customTags7放在firstController和secondController中，当在link中改变scope的
+变量name为wangwu时，等于同时改变了两个作用域的该变量，那么对于处在firstController中的其他指令也就造成了影响，customTags2
+读出的name不再是zhangsan，而是wangwu，firstController中customTags7读出的name也是wangwu。指令中有一个属性也提供了和link中
+scope一样的功能，它就是controller，而且controller还有其他妙用。*/
+/*解读自定义指令的各个属性：
+10）controller：
+controller可以在指令内部访问它所处的controller的作用域$scope（除非接下来我们要用的scope属性为true，那么这个作用域就是指令
+的内部独立作用域，而且这个独立作用域还能继承指令所在controller的作用域，它本身没有的属性可以向上查找。但无论这个作用域是它
+所处的controller的作用域，还是独立作用域，它和link中的scope始终是等价的。当指令在一个循环中，$scope就是更小范围的当前循环
+作用域，当然，它也可以是控制器的或独立的），controller的执行顺序在compile之后，link之前。除了访问作用域，controller还可以定义指令级的
+属性和方法，就是在controller属性中用this去定义属性和方法，而不是$scope，用this定义的属性和方法是属于指令的，它通常在link
+中使用，当然，也可以在共享给其他的指令。在本指令中使用this定义对象时，只要在link函数中依赖注入controller就行，当然，
+也可以用controllerAs属性给controller取个别名，link中依赖注入的时候用默认的controller或者用别名都是ok的。
+11）controllerAs：
+给指令中的controller取个别名。
+12）scope：
+scope有三种值，默认为false：
+为false或不写的话，表示controller中的这个参数作用域就是指令所在控制器中的那个作用域；
+为true的话，表示controller中的这个参数作用域不是指令所在控制器中的那个作用域，而是一个指令级的独立作用域，但是它会主动向
+上查找父作用域的属性；
+为对象{}的话，表示也是一个独立作用域，也继承了所在控制器作用域，但是它不会主动向上查找父作用域的属性，需要什么属性得靠自己
+去获取，另外，这种方式也可以通过不同写法实现双向或单向绑定父作用域的值（甚至部分属性单向绑定，部分属性双向绑定），同时还
+保持自己作用域的独立性，非常灵活，比scope:false+true两种加起来更加强大，这里的对象属性写法也有三种：
+    Fn:'&xZ'：这种首先要在指令所在标签定义一个属性x-z，它的值等于你想获取的父作用域的属性（可以是任何类型的数据），然后在
+    指令的模板中就可以使用这个Fn函数了，如{{Fn()}}。如果Fn和xZ命名相同，可以简写成Fn:'&'，Fn在controller重新定义，会覆盖
+    该指令的值，但是不会影响父作用域原本的值；
+    name:'=xZ'：这种用法同上，也可以绑定父作用域任何类型数据，name和xZ命名相同，也可以简写成name:'='。但是，name是个属性，
+    而不是函数，使用如下：{{name}}，此外，name是双向绑定的，在controller中改变了该属性值，不仅使得当前指令的值发生改变，
+    连父作用域的值也由于双向绑定一起改变了；
+    name:'@xZ'：这种用法同上，name和xZ命名相同，也可以简写成name:'@'。也是属性，写法如：{{titleValue}},但是，它在标签中
+    绑定父作用域属性时必须用{{}}，如title-attr="{{title}}"，此外，这个属性是单向绑定的，即只读的，在controller中改变了该
+    属性值，不仅不会改变当前指令的值，也不会改变父作用域的值，而且，它只可以绑定父作用域基本类型数据。
+PS：无论哪种情况，controller中的这个$scope始终和link中的scope是等价的。
+*/
+.directive("customTags7",function(){
+    return {
+        restrict: "ECAM",
+        controller: function($scope){
+            console.log($scope.name);
+
+            /*当scope为true，且在这里改变作用域的name属性，会发现在同一作用域的指令customTags2读出的name还是zhangsan，说明
+            此处scope是个独立作用域；当scope为false或不写，customTags2读出的name就是qianqi了*/
+            //$scope.name = "qianqi";
+
+            /*这里重新声明了descValue函数，就会覆盖scope中定义的descValue函数，而且它不会改变所在控制器的desc原本的值。*/
+            /*$scope.descValue = function(){
+                return '再次替换后的字符';
+            };*/
+            /*这里改变了nameValue属性值，是同时改变了独立作用域的nameValue和它双向绑定的父作用域的name值。*/
+            /*$scope.nameValue = 'zhangsan again';*/
+            /*这里改变了titleValue属性值，既没有改变了独立作用域的titleValue，也没有改变父作用域的title值。可见@写法是单向
+            * 绑定的，即它是只读的。*/
+            /*$scope.titleValue = 'byebye';*/
+
+            this.name = "zhaoliu";
+            this.myFunction = function(){
+                alert("customTags7的独有函数");
+            };
+            this.myFunction2 = function($event){
+                $event.stopPropagation();
+                alert("customTags8共享到的customTags7的独有函数");
+            }
+        },
+        //scope:true,
+        scope:{
+            /*由于scope为对象时，不会主动到父作用域向上查找属性，所以指令模板中的name是解析不出来的，想要主动找寻什么属性
+            得靠自己定义，如下：我想拿到父作用域的desc属性，首先得在指令所在标签加一个任意命名的属性，这个属性的值就是我想要
+            拿到的父作用域的属性：<custom-tags7 desc-attr="desc"></custom-tags7>，这里我想拿到父作用域desc的值，用了个名为
+            desc-attr的属性名指向它；接下来根据驼峰命名规则，我们把desc-attr转换成descAttr，然后用任意一个函数名去指向这个
+            descAttr，并在descAttr前加上&符号，最后，我们就可以在指令模板中使用这个函数获取父作用域desc的值了。
+            PS：这里的属性名和函数名取成不一样的，如果取成一样的，如：descAttr:"&descAttr"，那么可以简写成descAttr:"&"。
+            PS：这里<custom-tags8></custom-tags8>里的name值也没有了，因为一开始会向上查找，来到custom-tags7的作用域，结果
+            也没找到，custom-tags7的作用域不会主动再向上找name属性了，所以也没有值。
+            PS：如果在controller函数中重新声明了descValue这个函数，那么，这里所定义的函数会被覆盖，且不会影响到父作用域中
+            desc的值。
+            PS：&的写法可以绑定任何类型的父作用域属性。*/
+            descValue:"&descAttr",
+            /*=的写法跟&的写法非常类似，当左右名称相同时，也可以有简写，如：nameAttr:"=",只是这种写法使用时它并不是函数，而是
+            属性，如：{{nameValue}}，此外，这个属性是双向绑定的，在controller中改变了该属性值，不仅使得当前指令的值发生改变，
+            连父作用域的值也由于双向绑定一起改变了。
+            PS：=的写法可以绑定任何类型的父作用域属性。*/
+            nameValue:"=nameAttr",
+            /*@的写法跟=的写法非常类似，当左右名称相同时，也可以有简写，如：titleAttr:"@",也是属性，写法如：{{titleValue}},
+            但是，它在标签中绑定父作用域属性时必须用{{}}，如title-attr="{{title}}"，此外，这个属性是单向绑定的，即只读的，
+            在controller中改变了该属性值，不仅不会改变当前指令的值，也不会改变父作用域的值。
+            PS：@的写法只能绑定基本类型的父作用域属性。*/
+            titleValue:'@titleAttr'
+        },
+        controllerAs:'controllerTag',
+        template: "<p>hello {{name}} {{descValue()}} {{nameValue}} {{titleValue}}<custom-tags8></custom-tags8></p>",
+        replace:true,
+        link:function(scope,iElement,iAttrs,controller){
+            console.log(scope.name);
+            /*scope.name = "wangwu";*/
+
+            /*iElement.text(controller.name);*/
+            iElement.on("click",controller.myFunction);
+        }
+    }
+})
+
+/*解读自定义指令的各个属性：
+13）require：
+当其他指令A要用到某个指令B的controller中this定义的对象时，就需要用到require属性。
+这里有几个值得重视的地方，第一，指令A必须嵌套在指令B中；第二，require属性的值为"^"+指令B的名称，表示允许向上（向父节点方向）
+找，只有这样，才能找到指令B，此外，angular还提供了"?"+指令B名称的写法，加上以后找不到也不报错，当然，"?^"可以组合使用。
+require以后，就可以使用require的指令的controller，依赖注入到link的参数中加以使用。
+ */
+.directive("customTags8",function(){
+    return {
+        restrict: "ECAM",
+        require: "?^customTags7",
+        template: "<p>Hello {{name}}</p>",
+        replace:true,
+        link:function(scope,iElement,iAttrs,controllerTag){
+            iElement.on("click",controllerTag.myFunction2);
+        }
+    }
+})
+
+.controller("firstController",["$scope",function($scope){
+    $scope.desc = "替换后的字符";
+    $scope.name = "zhangsan";
+    $scope.users = [
+        {
+            id:10,
+            name:"zhangsan"
+        },
+        {
+            id:20,
+            name:"lisi"
+        }
+    ];
+    $scope.title = "goodbye";
+}])
+
+.controller("secondController",["$scope",function($scope){
+    $scope.name = "lisi";
+}])
+
+</script>
+</body>
+</html>

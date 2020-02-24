@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        学习使用angular常用内置事件指令：ng-change、ng-click、ng-dblclick、ng-mousedown、ng-mouseenter、
+        ng-mouseleave、ng-mousemove、ng-mouseover、ng-mouseup、ng-submit
+    -->
+    <meta charset="UTF-8">
+    <title>事件指令</title>
+</head>
+<body>
+    <div ng-app="myApp">
+        <div ng-controller="myController">
+            <!--ng-change：input、select、textarea的双向绑定值的值改变事件。
+            注意：这也里一定是对双向绑定值的修改，就是说没有ng-model绑定值得话，ng-change是无效的，它不能通过value的改变
+            来触发值改变事件。另外，值改变事件只针对页面修改，js中修改也是无法触发值改变事件的。-->
+            <input type="text" value="" ng-model="name" ng-change="changeValue()"/>
+            <!--ng-click：单击事件-->
+            <!--$event用于传递事件，和其他服务有所不同，$event是作为事件指令的参数传递到js函数，然后在js函数中读取$event相应属性来使用的。-->
+            <button ng-click="changeStatus($event)">切换状态</button>
+            <p>{{status}}</p>
+            <!--ng-dblclick：双击事件-->
+            <button ng-dblclick="count = count + 1" ng-init="count = 0">{{count}}</button>
+            <!--ng-mousedown：鼠标按下时事件-->
+            <!--鼠标按下时事件和单击事件的区别：
+            鼠标按下时事件只要鼠标按下就会执行，单击事件需要鼠标在该元素按下后并在该元素上松开鼠标才会执行，即
+            ng-click = ng-mousedown + ng-mouseup-->
+            <button ng-mousedown="count = count + 1">{{count}}</button>
+            <!--ng-mouseup：鼠标松开时事件（在其他地方按下，在该元素上松开也会执行）-->
+            <button ng-mouseup="count = count + 1">{{count}}</button>
+            <!--ng-mouseenter：鼠标指针穿进元素时事件-->
+            <button ng-mouseenter="count = count + 1">{{count}}<span>子元素</span></button>
+            <!--ng-mouseleave：鼠标指针离开（穿出）元素时事件-->
+            <button ng-mouseleave="count = count + 1">{{count}}</button>
+            <!--ng-mousemove：鼠标指针在元素上移动时事件（鼠标指针在元素上产生任何位移都会执行一次，指针直接划过元素，就产生
+            了n个位移点，会执行n次）-->
+            <button ng-mousemove="count = count + 1">{{count}}</button>
+            <!--ng-mouseover：鼠标指针移动到元素或其子元素（包括孙元素...）上时事件。
+            与ng-mouseenter的区别是，ng-mouseenter不管指针是在元素本身还是子孙元素上穿进，都视为一个整体，只执行一次；
+            而ng-mouseover是指指针在元素本身、子元素、孙元素...上穿过，每次穿过都是独立执行一次，在元素和子元素上来回移动，
+            就会反复执行。-->
+            <button ng-mouseover="count = count + 1">{{count}}<span>子元素</span></button>
+            <!--表单提交中每个input都必须要有name属性，就相当于请求url传递的参数名。
+            enctype是表单提交的数据的编码方式，默认为application/x-www-form-urlencoded，一般只用于字符串的提交，像案例中
+            用到了文件上传这种二进制数据的提交，所以要改编码方式为multipart/form-data。-->
+            <!--ng-submit定义在form上，是点击表单提交按钮后，首先执行的函数，然后才是请求action指定的url。
+            说明：这里是纯前台环境，所以action是个404的url。-->
+            <form action="/test/test" method="post" target="_blank"
+                  enctype="multipart/form-data" ng-submit="changeText()">
+                <input type="file" name="file"/>
+                <input type="text" name="name"/>
+                <input type="submit" value="提交"/>
+            </form>
+            <p>{{warnInfo}}</p>
+        </div>
+    </div>
+
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    angular.module("myApp",[])
+
+    .controller("myController",function($scope){
+       $scope.status = false;
+       $scope.name = "zhangsan";
+       $scope.warnInfo = "表单未提交";
+
+       $scope.changeValue = function(){
+           console.log($scope.name);
+           /*值改变事件只针对页面修改，js中修改是无法触发值改变事件的。*/
+           $scope.name = "lisi";
+       }
+
+       /*js函数参数：
+        js函数不存在重载，只要定义了函数名，无论定义函数的地方有几个参数，也无论调用该函数的地方传了几个参数，最终结果
+        都能成功调用到函数。
+        js有个内置的arguments数组（下标从0开始），arguments的每个元素代表调用方传递进来的参数：当调用方没有传参时，arguments
+        的每个元素都是undefined；当传入一个参数时，arguments[0]就是传进来的参数值，arguments其他元素都为undefined；当传入
+        n个参数时，argument[0]~arguments[n-1]都有值，其他arguments元素为undefined。
+        js函数定义时设置的形参唯一的意义就在于给arguments的元素取了别名，如function(id,name)意思就是该函数的arguments[0]
+        可以用id来表示、arguments[1]可以用name来表示。*/
+       $scope.changeStatus = function(){
+           console.log(arguments[0]);
+           console.log(arguments[0].target);
+           /*angular提供了一些简单的jquery api，angular.element(js对象)作用是把js对象转换成jquery对象，转换后就能使用简单的
+           jquery api了。*/
+           angular.element(arguments[0].target).html("切换状态为：" + $scope.status);
+           $scope.status = !$scope.status;
+       }
+
+        $scope.changeText = function(){
+            $scope.warnInfo = "开始表单提交";
+        }
+    });
+</script>
+</body>
+</html>

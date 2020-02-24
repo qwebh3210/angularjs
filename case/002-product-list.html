@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        产品列表
+    -->
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../vendor/css/bootstrap.min.css"/>
+    <style type="text/css">
+        .redCaret {color:red}
+        .big {padding:1px}
+        .yellowCaret {color:yellow}
+    </style>
+    <title>产品列表</title>
+</head>
+<body>
+<div ng-app="product">
+    <div class="container" ng-controller="productController">
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <form class="navbar-form navbar-left">
+                    <div class="form-group">
+                        <!--用过滤器实现搜索：
+                        在搜索输入框绑定一个变量（这个变量可以是model层没有事先定义过的，由于双向
+                        绑定，在view层定义了该变量，在触发UI事件，如输入框值改变事件，就会触发脏检查把变量同步到model层），
+                        在读取的地方用过滤器达到实时搜索的目的，如：
+                        1）ng-model="search"，ng-repeat="product in productData | filter:search"，这样product只要有任何一个属性包含输入框的
+                        内容，就会被搜索出来；
+                        2）ng-model="search"，ng-repeat="product in productData | filter:{name:search}"，这样就只对product的name值进行搜索，即
+                        product的name属性包含输入框的值，就会被搜索出来；
+                        3）ng-model="search.name"，ng-repeat="product in productData | filter:search"，这是方法2）的变种方法，
+                        用search对象去过滤product对象，而输入框的值绑定了search的name属性，所以结果就是用search的name属性去
+                        过滤product的name属性，有包含关系的就会被搜索出来。-->
+                        <input type="text" ng-model="search" class="form-control" placeholder="Search">
+                    </div>
+                </form>
+            </div>
+        </nav>
+        <table class="table">
+            <thead>
+                <tr>
+                    <!--ng-class用来动态赋予元素class，dropup是三角形箭头向上（升序）的样式，{dropup:order == ''}表示
+                    当order为''时，赋予该th元素dropup的class样式，否则不赋予。redCaret是三角形箭头标红的样式（标红表示
+                    当前是用该表头的字段排序的），{redCaret:orderType == 'id'}表示当排序字段为id属性时，id属性所在的表头
+                    三角形箭头标红，其他两个三角形箭头的ng-class同理。
+                    ng-class的多种用法：
+                    1）由表达式决定是否赋予单个属性。如：{redCaret:orderType == 'id'}；
+                    2）由同一个表达式决定是否同时赋予多个属性。如：{'redCaret big':orderType == 'id'}；
+                    3）由同一个表达式决定为真时赋予某些属性，为假时赋予另一些属性。如：
+                    {true:'redCaret big',false:'yellowCaret'}[orderType == 'id']或{'redCaret big':orderType == 'id','yellowCaret':orderType != 'id'};
+                    4）由不同的表达式决定不同属性在不同条件下是否赋予。如：{'redCaret big':orderType == 'id','yellowCaret':orderType == 'name'};
+                    5）由多个条件决定是否赋予某些属性。如：{redCaret:orderType == 'id' && order == '-'}。-->
+                    <!--这里默认以id属性升序排序，给每个表头绑定一个方法，并传入该表头描述的属性名称，当点击表头时，使用对应的属性
+                    排序，并反转当前的升降序规则。-->
+                    <th ng-click="changeOrder('id')" ng-class="{dropup:order == ''}">产品编号<span ng-class="{redCaret:orderType == 'id'}" class="caret"></span></th>
+                    <th ng-click="changeOrder('name')" ng-class="{dropup:order == ''}">产品名称<span ng-class="{redCaret:orderType == 'name'}" class="caret"></span></th>
+                    <th ng-click="changeOrder('price')" ng-class="{dropup:order == ''}">产品价格<span ng-class="{redCaret:orderType == 'price'}" class="caret"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!--model层定义了两个变量：order表示升序还是降序，orderType表示用哪个字段排序-->
+                <tr ng-repeat="product in productData | filter:search | orderBy:order + orderType">
+                    <td>{{product.id}}</td>
+                    <td>{{product.name}}</td>
+                    <td>{{product.price | currency:'¥'}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+angular.module("product",[])
+
+.service("productData",function(){
+    return [
+        {
+            id:3333,
+            name:"iphone",
+            price:5400
+        },
+        {
+            id:885,
+            name:"ipad",
+            price:3420
+        },
+        {
+            id:980,
+            name:"imac",
+            price:15400
+        },
+        {
+            id:1212,
+            name:"ipad air",
+            price:2340
+        },
+        {
+            id:3424,
+            name:"ipad mini",
+            price:2200
+        }
+    ]
+})
+
+.controller("productController",function($scope,productData){
+    $scope.productData = productData;
+
+    $scope.orderType = "id";
+    $scope.order = "";
+
+    $scope.changeOrder = function(type){
+        $scope.orderType = type;
+        if($scope.order == ""){
+            $scope.order = "-";
+        }else{
+            $scope.order = "";
+        }
+    }
+})
+</script>
+</body>
+</html>

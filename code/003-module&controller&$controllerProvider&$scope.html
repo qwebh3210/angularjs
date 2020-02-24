@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        理解angularjs模块，
+        理解angularjs控制器，
+        学习angularjs模块注册时的配置函数及模块提供的快捷方式api：config，学习config与run的区别，
+        学习定义常量的两个服务constant和value的异同，
+        理解angularjs中服务、config、run和controller的先后执行顺序，
+        学习ng-controller在dom中声明控制器管理范围，
+        学习通过$controllerProvider服务以及模块提供的快捷api：controller来注册控制器，
+        学习隐式和显式依赖注入，
+        理解作用域的多层关系、创建先后顺序和不同作用域之间的通信
+    -->
+    <meta charset="UTF-8">
+    <title>控制器</title>
+</head>
+<body>
+    <!--
+        ng-app未命名的情况下（ng-app或ng-app=""）都是可以用angularjs管理该范围内dom的，
+        但是如果想使用ng-controller，必须给ng-app命名，然后在js中用该ng-app的命名注册模块，然后用模块注册控制器
+        （类似控制器的组件还有很多，都需要用到该模块，所以ng-app命名是很有必要的），
+        ng-app一旦命名，就必须注册成模块，否则ng-app将无法对该dom范围进行管理;
+        同理，控制器一旦声明，也必须在js中注册控制器，否则无法管理作用域内的数据。
+    -->
+    <div ng-app="myApp">
+        {{name}}
+        </br>
+        {{corporation}}
+        </br>
+        {{age}}
+        </br>
+        {{sex}}
+        <div ng-controller="secondController">
+            {{name}}
+            </br>
+            {{corporation}}
+            </br>
+            {{age}}
+            </br>
+            {{sex}}
+            </br>
+            <input type="text" value="" ng-model="identity"/>
+            <div ng-controller="firstController">
+                <input type="text" value="" ng-model="name"/>
+                </br>
+                {{name}}
+                </br>
+                {{corporation}}
+                </br>
+                {{age}}
+                </br>
+                {{sex}}
+                </br>
+                <!--为了更加详实地说明作用域变量向上查找的特性，我们在firstController的作用域没有定义identity变量，而在
+                secondController定义了该变量，结果显示，firstController里的identity由于在自己的作用域没有找到变量，就
+                去父作用域找，并且找到了进行显示。当我们改变父输入框的值时，子输入框的值还是没变，因为此时子作用域还是
+                没有在自己作用域的model层定义identity，接下来改变子输入框的值，发现父输入框没有变化，而在这之后继续改变父
+                输入框的值也无法让子输入框的值跟着变了，这就说明了，此时子输入框把view层的identity绑定到了子作用域
+                model层的identity上了，从此有了自己的identity，不会再去苦苦找父作用域的identity了。
+                这里值得注意的是，页面刚加载那次只是model层的数据绑定到了view层，父输入框改变值时把父view层的identity绑定
+                到了父model层的identity，子输入框的值虽然也发生了变化，但是这个过程仍然只是子view层向子model层读取数据、
+                读不到就到父model层去读取，而没有view->model的绑定过程；而当主动改变子输入框的值时，不是view向model读数据，
+                而是view层定义了identity这个变量，然后把变量绑定到model层去。两次子view层的数据变化看似一样，其实相差千里，
+                第一次是被动读取，第二次是主动定义，只有主动定义（或修改），才会把view层数据绑定到对应作用域的model层。-->
+                <input type="text" value="" ng-model="identity"/>
+            </div>
+        </div>
+        <div ng-controller="thirdController">
+            {{name}}
+        </div>
+    </div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+    <!--使用angularjs语法的js代码必须放在angularjs引入之后，否则将会语法错误-->
+<script type="text/javascript">
+    /*用ng-app的命名注册模块：注册模块相当于angular启动了一个main线程，一个页面不可以有多个模块，也不能有多个ng-app。
+    完整的模块注册写法是：angular.module(app,[requests],Fn)，各参数意义：
+    第一个参数app：模块名称，即ng-app声明的名称；
+    第二个参数[requests]：模块依赖的第三方模块，如bootstrap提供了很多依赖模块；
+    第三个参数Fn：回调函数（也叫配置函数），用于模块配置，如配置自定义服务、自定义过滤器。*/
+    /*隐式依赖注入和显式依赖注入：
+    1）隐式依赖注入：function($controllerProvider){}。回调函数里的$controllerProvider因为是依赖注入进来的，所以名字必须是
+    $controllerProvider，用其他非内置服务的名字来注入结果都是undefined；
+    2）显式依赖注入：["$controllerProvider",function(a){}]。显示依赖注入会先说明注入的参数是什么，在回调函数中就可以对参数随意命名了。
+    PS：隐式依赖注入和显式依赖注入适用于所有需要依赖注入的场景，如控制器回调函数的依赖注入。
+    PS：虽然练习中我们为了方便都是用隐式依赖注入，但实际中显式依赖注入会更好，因为隐式依赖注入在js代码压缩后可能出现
+    不可预知的错误，而显式依赖注入则没有这样的问题。*/
+    var app = angular.module('myApp', [], ["$controllerProvider","CONSTANT_SERVICE",function(a,CONSTANT_SERVICE){
+        console.log(CONSTANT_SERVICE);
+        /*把thirdController的注册放到了模块注册的回调函数中，用$controllerProvider服务来注册控制器（当然，$controllerProvider
+        服务需要在模块注册的回调函数中进行依赖注入），在回调函数中定义的控制器的参数依旧不需要在回调函数中依赖注入，
+        它是与thirdController控制器共生的，不需要其他地方声明。
+        值得注意的是，虽然在回调函数中也可以定义控制器的注册，但定义归定义，不代表它在模块注册时就执行，控制器原来是按dom
+        的结构先后顺序来注册，现在依然如此。*/
+        a.register('thirdController', function($scope,$window){
+            /*angular还提供了$window服务，也需要依赖注入，作用相当于dom的window。*/
+            console.log($window);
+            /*$window.location.href="https://www.baidu.com/";*/
+            $scope.name = "zhaoliu";
+            /*$scope.$id是作用域的唯一标识，它的值也体现了作用域的创建顺序，这里$scope.$id输出为4，表示它是第4个创建的作用域。*/
+            console.log($scope.$id);
+            console.log($scope.$parent.name);
+            console.log($scope.$$prevSibling.age);
+            console.log($scope.$$prevSibling.$$childHead.name);
+        });
+    }]);
+
+    /*模块提供了定义全局常量的api，分别是：constant和value。
+    1）共同点：都可以通过依赖注入把服务注入到controller和其他服务中，且重新赋值只会影响到发生重新赋值这个事件所在的组件中，
+    其他组件的不受影响。如在firstController和secondController中都依赖入住了valueService，但是在firstController中修改了
+    valueService的值，这时候secondController中的valueService的值还是不变的。
+    2）不同点：constant可以注入到模块配置函数中，但是value不可以。
+    PS：constant一般放简单数据，value一般放复杂数据。*/
+    app.constant('CONSTANT_SERVICE','CONSTANT_SERVICE');
+    app.value('valueService','valueService');
+
+    /*模块注册的第三个参数Fn配置函数其实模块也提供了一个快捷方法api：config，用法如下，它和Fn一样，可以依赖注入$controllerProvider,
+    $provide等provider，我们把thirdController的注册移到config里，也是没有任何问题的。*/
+    /*app.config(function($controllerProvider){
+        $controllerProvider.register('thirdController', function($scope,$window){
+            console.log($window);
+            $scope.name = "zhaoliu";
+            console.log($scope.$id);
+            console.log($scope.$parent.name);
+            console.log($scope.$$prevSibling.age);
+            console.log($scope.$$prevSibling.$$childHead.name);
+        });
+    });*/
+
+    /*run跟config的职能不一样，config常用来配置信息（配置块），run一般用作权限验证、把缓存数据赋值在$rootScope上（运行块）。
+    PS：angularjs的执行顺序：服务（包括constant和value）->config->run->controller。
+    PS：config不能注入value常量，run可以；config只能注入provider系列的服务，run没有限制；一般run都会依赖注入$rootScope操作全局数据。*/
+    app.run(function(){});
+
+    /*用模块注册控制器，function中可通过依赖注入，把controller负责的作用域参数$scope注入进来（名字必须是$scope，其他名字无效），
+    以便在function中对作用域内的model层数据进行管理，如果无需管理，可以不注入
+    （不注入不代表不存在，$scope以及$scope下的model数据都是存在的，只是你没法通过其他方式操控而已）。
+    当然，需要使用到其他参数的时候，也可以通过依赖注入的方式直接拿过来用。*/
+    app.controller('firstController', ["$scope","$rootScope",function(a,b) {
+        /*初始化作用域中name的值，页面刚加载就会显示该值，并对view层name进行双向绑定；
+        如果不初始化，那么页面一开始没有name值，随着用户对以name为model数据的输入框进行编辑，
+        view层的name会双向绑定到model层的name中*/
+        a.name = "zhangsan";
+        a.sex = "男";
+        /*$rootScope为全局作用域，用来定义全局变量（所谓的全局就是ng-app的管理范围），
+        一般来说，全局变量名称具有唯一性，如果一定要跟控制器的命名冲突的话，原则是小范围覆盖大范围的值，
+        即控制器外显示lisi，控制器内显示zhangsan*/
+        b.name = "lisi";
+        b.corporation = "google";
+        /*$scope是有层级关系的，firstController的父scope就是secondController的$scope，
+        在这里可以用$scope.$parent的方式进行访问，这样定义出来的变量是secondController作用域范围内的。
+        从实验结果可以看出，angularjs表达式是向上读取的，即子作用域的同名变量优先读取，没有的话就往上找，
+        一直找到根作用域为止。
+        虽然angularjs表达式是向上读取的，但其实不同作用域之间仍然是可以通信的，靠的就是$scope的
+        $parent（父作用域）、$$childHead（第一个子作用域）、$$childTail（最后一个子作用域）、
+        $$prevSibling（上一个兄弟作用域）、$$nextSibling（下一个兄弟作用域）...
+        这样我们就能在一个作用域操作（定义、更改、读取、置空）另外一个作用域的变量了。
+        注意：如果要用一个作用域的变量值给另一个作用域的变量赋值，以实现数据共享，是万万不能用基础类型数据赋值的，只能用引用类型。
+        因为基本属性赋值都是一次性的，比如说，b给a赋值，赋值的时候b为'zhangsan'，那么被赋值的变量a的值就是'zhangsan'，
+        即使以后b发生了变化，a还是'zhangsan'，同理，a的值变了，也不会影响到b；而用引用对象赋值的话，b赋给a的其实是个内存地址，
+        b发生变化，a会去找这个地址，获得它当前的值，由此真正实现数据共享。不过，实现数据共享，我们更倾向于后面讲到的自定义
+        服务去共享数据，因为自定义服务可以说是在一个全局函数返回给各个控制器的数据，而不同作用域之间相互赋值是一个作用域拿另一个作用域
+	    的数据，逻辑上不如前者关系清晰，再者，如果各个作用域的关系很复杂的话，操作起来也是很麻烦的。*/
+        a.$parent.age = "34";//这里字符串就是基本属性赋值
+        console.log(a.$parent.sex);
+        a.$parent.sex = "未知";
+        console.log(a.$parent.sex);
+    }]);
+
+/*    app.controller('thirdController', function($scope){
+        console.log("third");
+        $scope.name = "zhaoliu";
+        /!*$scope.$id是作用域的唯一标识，它的值也体现了作用域的创建顺序，这里$scope.$id输出为4，表示它是第4个创建的作用域。*!/
+        console.log($scope.$id);
+        console.log($scope.$parent.name);
+        console.log($scope.$$prevSibling.age);
+        console.log($scope.$$prevSibling.$$childHead.name);
+    });*/
+
+    app.controller('secondController', function($scope){
+        $scope.sex = "女";
+        /*控制器的注册是有先后顺序的，不是根据它们在js中的注册的先后顺序，而是它们在dom中的声明顺序。
+        这里有3个controller，每个controller对应一个作用域，加上ng-app的根作用域，一共有4个作用域，
+        根作用域在ng-app注册模块的时候创建，controller的作用域只有在controller注册时才会被创建。
+        页面加载时，首先读到ng-app，到js中找ng-app注册模块的方法并执行，创建出根作用域，然后继续渲染dom树，
+        发现secondController的声明，再在js中找到其注册方法并执行，继续渲染，在渲染完secondController对应的dom元素之前，
+        又发现了firstController的声明，于是在js中找到其注册方法并执行，最后，thirdController才会被注册。
+        所以，如果想操作别的作用域，必须在其开始注册之后（作用域被创建之后）。
+        这里延迟0.4s打印它的父级作用域（即根作用域）的name属性，原因就在于，根作用域是在firstController注册时定义的，
+        而secondController的注册发生在firstController注册之前，此时是读不到根作用域的name属性值的。也就是说$scope是动态变化的，
+	    一开始就打印和400ms以后打印出来的$scope，在其结构中查找$parent，继而查找name属性，发现一开始打印的没有name属性，
+	    400ms后打印的name属性值为'lisi'*/
+        setTimeout(function(){
+            console.log($scope.$parent.name);
+        },400);
+        $scope.identity = '老师';
+    });
+</script>
+</body>
+</html>

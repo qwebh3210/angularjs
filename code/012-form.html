@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        学习使用form表单常用指令：ng-model数据绑定、ng-required是否必填、ng-minlength最小长度、ng-maxlength最大长度、
+        ng-pattern正则匹配、ng-change值变换回调，
+        学习使用form表单控制变量：formName.inputFieldName.$pristine字段未更改，formName.inputFieldName.$dirty字段已更改，
+        formName.inputFieldName.$valid字段有效，formName.inputFieldName.$invalid字段无效，formName.inputFieldName.$error
+        字段错误信息，formName.$valid整个表单所有字段有效，formName.$invalid表单不能完全通过验证。
+        学习表单提供的api还原表单控制变量$pristine和$dirty：formName.$setPristine()。
+        学习ng-options、ng-disabled用法。
+        学习angular.copy复制数据。
+        深入理解表单重置过程。
+        理解js中this关键字的用法以及用call方法传入其他的this替代原本的this来达到一个地方调用另一个地方定义的函数（或对象）的目的。
+        学习使用angular.isDate判定给定数据是否为Date类型。
+        学习继承ngModel指令，并使用其常用服务：$parsers、$formatters、$setValidity、$setViewValue、$render、$viewValue。
+    -->
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../vendor/css/bootstrap.min.css"/>
+    <title>form</title>
+</head>
+<body>
+    <div ng-app="myApp" style="margin-top:100px;">
+        <div ng-controller="secondController"></div>
+        <!--form-horizontal可以让表单输入框及按钮保持适当的行间距。-->
+        <!--action是表单提交地址，这里没有test.jsp页面，所以会报404。-->
+        <form name="myForm" action="test.jsp" class="container form-horizontal" ng-controller="firstController">
+            <div class="form-group" ng-class="{'has-error':myForm.username.$invalid && myForm.username.$dirty}">
+                <!--col-sm-1后面这个数字就是当前元素在整行的占位长度，规定一行分为12个长度，col-sm-1意思就是占1/12的长度。-->
+                <label class="col-sm-1">用户名</label>
+                <div class="col-sm-11">
+                    <!--ng-required设置为true，表示为必填项，当点击提交时，如果没填此项，会提示‘请填写此字段‘（如果有多个
+                    输入框都设置了ng-required='true'，那么点提交的时候，之后在第一个输入框进行提示）。’
+                    ng-minlength和maxlength输入长度的验证没有提示。如果想知道这些条件是否验证通过，需要用form表单的控制变量
+                    来得知（包括ng-required的验证是否通过，这样就不用点提交就能动态获知必填项填了没有）。-->
+                    <!--ng-pattern表示需要满足该正则表达式才能验证通过。格式模板：/^[a-zA-Z]{1}/-->
+                    <!--autocomplete是自动提示历史输入信息的功能，on：开启；off：关闭。默认为on。-->
+                    <!--form-control能让输入框有个漂亮的宽高。-->
+                    <input type="text" name="username" autocomplete="off" ng-model="data.username" ng-required="true"
+                           ng-pattern="/^[a-zA-Z]{1}/" ng-minlength="5" ng-maxlength="10" class="form-control" placeholder="用户名" value="{{data.username}}">
+                    <!--以下就是常用form表单的控制变量，能动态获取字段当前是否通过各项验证（true：通过验证；false：未通过；
+                    myForm.username.$error是个例外：{}表示所有验证通过，对象内有属性（此时这些属性的值一定是true），表示这些
+                    属性所代表的验证未通过，如：{"required":true}表示ng-required="true"未通过验证）。-->
+                    <!--字段未更改，只要动过一次，即使最后还原成以前的值，也算是已更改-->
+                    <!--{{myForm.username.$pristine}}-->
+                    <!--字段已更改，值跟$pristine相反-->
+                    <!--{{myForm.username.$dirty}}-->
+                    <!--字段有效，字段通过所有验证-->
+                    <!--{{myForm.username.$valid}}-->
+                    <!--字段无效，字段不满足某些验证条件-->
+                    <!--{{myForm.username.$invalid}}-->
+                    <!--字段错误信息，{}表示无错误信息，对象内有属性（此时这些属性的值一定是true），表示这些
+                    属性所代表的验证未通过，如：{"required":true}表示ng-required="true"未通过验证）。值得注意的是，在字段
+                    长度为0时，ng-minlength的验证是不会显示错误的，只有长度大于0且不满足最小长度时，才会有{"minlength":true}的
+                    错误信息。-->
+                    <!--{{myForm.username.$error}}-->
+                    <!--加上!myForm.username.$error.pattern的条件，表示先只验证正则，通过了再验证长度，以免提示多个错误信息。-->
+                    <div ng-show="myForm.username.$dirty && myForm.username.$error.maxlength && !myForm.username.$error.pattern" class="alert alert-danger help-block">
+                        用户名长度不能超过10位
+                    </div>
+                    <div ng-show="myForm.username.$dirty && myForm.username.$error.minlength && !myForm.username.$error.pattern" class="alert alert-danger help-block">
+                        用户名长度不能小于5位
+                    </div>
+                    <div ng-show="myForm.username.$dirty && myForm.username.$error.pattern" class="alert alert-danger help-block">
+                        用户名必须以字母开始
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" ng-class="{'has-error':myForm.password.$invalid && myForm.password.$dirty}">
+                <label class="col-sm-1">密码</label>
+                <div class="col-sm-11">
+                    <input type="password" name="password" autocomplete="off" ng-model="data.password" ng-required="true"
+                           ng-minlength="5" ng-maxlength="10" class="form-control" placeholder="密码" value="{{data.password}}">
+                    <div ng-show="myForm.password.$dirty && myForm.password.$error.maxlength" class="alert alert-danger help-block">
+                        密码长度不能超过10位
+                    </div>
+                    <div ng-show="myForm.password.$dirty && myForm.password.$error.minlength" class="alert alert-danger help-block">
+                        密码长度不能小于5位
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" ng-class="{'has-error':myForm.passwordConfirm.$invalid && myForm.passwordConfirm.$dirty}">
+                <label class="col-sm-1">确认密码</label>
+                <div class="col-sm-11">
+                    <input type="password" name="passwordConfirm" autocomplete="off" ng-model="data.passwordConfirm" ng-required="true"
+                           class="form-control" placeholder="确认密码" value="{{data.passwordConfirm}}">
+                    <div ng-show="myForm.passwordConfirm.$dirty && myForm.password.$dirty && data.passwordConfirm !== data.password" class="alert alert-danger help-block">
+                        密码和确认密码不一致
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" ng-class="{'has-error':myForm.email.$invalid && myForm.email.$dirty}">
+                <label class="col-sm-1">邮箱</label>
+                <div class="col-sm-11">
+                    <!--当input的type='email'时，不需要在input进行额外的email格式约束，myForm.email.$error有一个email属性，当
+                    email格式不正确时，myForm.email.$error.email = true，是无法通过验证的。-->
+                    <input type="email" name="email" autocomplete="off" ng-model="data.email" ng-required="true"
+                           ng-minlength="5" ng-maxlength="30" class="form-control" placeholder="邮箱" value="{{data.email}}">
+                    <div ng-show="myForm.email.$dirty && myForm.email.$error.maxlength && !myForm.email.$error.email" class="alert alert-danger help-block">
+                        邮箱长度不能超过30位
+                    </div>
+                    <div ng-show="myForm.email.$dirty && myForm.email.$error.minlength && !myForm.email.$error.email" class="alert alert-danger help-block">
+                        邮箱长度不能小于5位
+                    </div>
+                    <div ng-show="myForm.email.$dirty && myForm.email.$error.email" class="alert alert-danger help-block">
+                        邮箱格式不正确
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" ng-class="{'has-error':myForm.blog.$invalid && myForm.blog.$dirty}">
+                <label class="col-sm-1">博客网址</label>
+                <div class="col-sm-11">
+                    <!--当input的type='url'时，不需要在input进行额外的url格式约束，myForm.email.$error有一个url属性，当
+                    url格式不正确时，myForm.email.$error.url = true，是无法通过验证的。-->
+                    <input type="url" name="blog" autocomplete="off" ng-model="data.blog" ng-required="true"
+                           ng-minlength="10" ng-maxlength="30" class="form-control" placeholder="博客网址" value="{{data.blog}}">
+                    <div ng-show="myForm.blog.$dirty && myForm.blog.$error.maxlength && !myForm.blog.$error.url" class="alert alert-danger help-block">
+                        博客网址长度不能超过30位
+                    </div>
+                    <div ng-show="myForm.blog.$dirty && myForm.blog.$error.minlength && !myForm.blog.$error.url" class="alert alert-danger help-block">
+                        博客网址长度不能小于10位
+                    </div>
+                    <div ng-show="myForm.blog.$dirty && myForm.blog.$error.url" class="alert alert-danger help-block">
+                        博客网址格式不正确
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-1">性别</label>
+                <div class="col-sm-11">
+                    <!--在单选框外包裹一层<label class="radio-inline"></label>可以让选项垂直居中且选项与选项之间留到适合间距。-->
+                    <label class="radio-inline">
+                        <!--每一个选项上都用ng-required='true'，在提交的时候如果没有选，会有提示；
+                        每一个选项上都要绑定ng-model和value值，value需要不同的，当选择其中一个就是把它的value值赋给了ng-model
+                        绑定的变量。-->
+                        <input type="radio" name="sex" ng-checked='"1" === data.sex' ng-model="data.sex" ng-required="true" value="1"/> 男
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="sex" ng-checked='"0" === data.sex' ng-model="data.sex" ng-required="true" value="0"/> 女
+                    </label>
+                </div>
+            </div>
+            <!--复选框比较特殊，它不能用ng-required='true'约束为必填项，这样会导致所有选项勾选才算验证通过；它永远都不会$dirty,
+            无法通过判断$dirty去给它错误提示，这些验证通通只能在点击提交时自己去定义验证方法和提示信息。
+            而且复选框也无法使用ng-model绑定数据，因为它的值理应是个数组，勾选只能给绑定的变量赋值，并不能做push这样的操作，
+            解决方案是通过点击事件去实现所选项加入或移除爱好数组。-->
+            <div class="form-group">
+                <label class="col-sm-1">爱好</label>
+                <div class="col-sm-11">
+                    <!--在复选框外包裹一层<label class="checkbox-inline"></label>可以让选项垂直居中且选项与选项之间留到适合间距。-->
+                    <label class="checkbox-inline" ng-repeat="hobby in hobbies">
+                        <!--ng-checked用来表示单选或复选框选项是否被选中，true：选中；false：不被选中。-->
+                        <input type="checkbox" name="hobbies" ng-checked="-1 !== data.selectedHobbies.indexOf(hobby.id)" value="{{hobby.id}}"
+                               ng-click="toggleSelectedHobbies(hobby.id)"/> {{hobby.name}}
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" ng-class="{'has-error':myForm.age.$invalid && myForm.age.$dirty}">
+                <label class="col-sm-1">年龄</label>
+                <div class="col-sm-11">
+                    <!--当input的type='number'时，可以设置min和max两个属性，表示输入数字的范围，myForm.blog.$error中会有min和max属性，
+                    一旦超出范围，相应的属性就为true，验证不通过，而且如果是用输入框右边的上下箭头去加减数字会发现，从有效范围无法
+                    再加减到无效范围（在最大或最小值时就泵继续点了）；而通过手动输入可以随意输入，当输入一个无效范围的数字时，通过
+                    箭头往错误范围走是走不动的，往正确范围走，会一步就走到正确范围内离当前数字最近的那个值。-->
+                    <input type="number" name="age" autocomplete="off" ng-model="data.age" ng-required="true"
+                           min="10" max="99" class="form-control" placeholder="年龄" value="{{data.age}}">
+                    <div ng-show="myForm.age.$dirty && myForm.age.$error.min" class="alert alert-danger help-block">
+                        年龄不能小于10岁
+                    </div>
+                    <div ng-show="myForm.age.$dirty && myForm.age.$error.max" class="alert alert-danger help-block">
+                        年龄不能大于99岁
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-1">出生地</label>
+                <div class="col-sm-3">
+                    <!--ng-options指令用在select元素上，通过循环一个数组来生成一个下拉框，如：ng-options="item.id as item.name for item in data"，
+                    as前的id是下拉框选项的实际值，as后的name是下拉框选项的绑定值。-->
+                    <select class="form-control" name="province" ng-model="data.province" ng-options="area.id as area.name for area in areas | areaClass:0"></select>
+                </div>
+                <div class="col-sm-3" ng-class="{'has-error':!data.city && myForm.city.$dirty}">
+                    <select class="form-control" name="city" ng-show="data.province" ng-model="data.city" ng-required="true" ng-options="area.id as area.name for area in areas | areaClass:data.province"></select>
+                    <div ng-show="!data.city && myForm.city.$dirty" class="alert alert-danger help-block">
+                        市州不能为空
+                    </div>
+                </div>
+                <div class="col-sm-3" ng-class="{'has-error':!data.county && myForm.county.$dirty}">
+                    <select class="form-control" name="county" ng-show="data.city" ng-model="data.county" ng-required="true" ng-options="area.id as area.name for area in areas | areaClass:data.city"></select>
+                    <div ng-show="!data.county && myForm.county.$dirty && data.city" class="alert alert-danger help-block">
+                        区县不能为空
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-1">提交日期</label>
+                <div class="col-sm-11" ng-class="{'has-error':myForm.date.$invalid && myForm.date.$dirty}">
+                    <input type="text" class="form-control" name="date" autocomplete="off" ng-model="data.date" placeholder="提交日期" value="{{data.date}}" date-tag>
+                    <div ng-show="myForm.date.$error.isDate && myForm.date.$dirty" class="alert alert-danger help-block">
+                        日期格式不正确
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-1">自我介绍</label>
+                <intro-tag name="intro" class="col-sm-11 form-control" ng-model="data.intro" style="width:89.3%;left:1.2%;"></intro-tag>
+            </div>
+            <div class="form-group">
+                <!--col-sm-offset-2表示向右移动两个占位符（一行12个）-->
+                <div class="col-sm-11 col-sm-offset-2">
+                    <!--myForm.$invalid也是表单form的控制变量，用于验证整个表单是否验证通过，于此相对的还有myForm.$valid-->
+                    <!--ng-disabled用于控制按钮是否可用，true：不可用；false：可用。-->
+                    <!--data.selectedHobbies.length表示爱好复选框有选项，因为复选框违法使用required='true'进行表单必填验证，这里
+                    只能再加上这个验证条件。-->
+                    <button type="submit" class="btn btn-default" ng-disabled="myForm.$invalid || !data.selectedHobbies.length">注册</button>
+                    <!--btn btn-default可以让按钮样式更美。-->
+                    <!--type="reset"只是强行改变了input的value值，model层和view层数据本身并没有改变，而且除了数据的重置，
+                    表单控制变量也应该重置，如：formName.inputFieldName.$pristine和formName.inputFieldName.$dirty是无法通过
+                    数据重置而重置的。需要专门的方法重置：$scope.myForm.$setPristine()，而其他控制变量虽然可以根据数据的变化
+                    而变化，但实际上还是存在较大的问题，因为表单的双向绑定有个特性，没有通过验证的输入内容只能绑定在view层
+                    变量上，但无法双向绑定到model层变量中（验证成功，view值return给model值；验证失败，不会return任何东西，
+                    也可以理解为return undefined。也就是说无论model层变量之前是什么值，一旦验证失败，model数据就是undefined），
+                    这造成两个问题：1）即使把model层数据还原，也无法还原view层数据，因为
+                    model层数据还原前后数据都是一样的，就无法触发双向绑定这个动作，当然监听也依赖于model层的实际变化，所以
+                    也用不了，唯一的办法就是同时使用type="reset"，把value值强行清空，此时view层数据虽然不受影响，但是我们可以
+                    从头开始编辑输入框的内容了（初始值有默认值，即model层数据最开始有值的话，model和view层数据也都没变，
+                    但是页面上的值也会清空，如果想要显示出来，普通的输入框需要给value赋值，如value="{{data.username}}"；单选复选框
+                    需要设置ng-checked，下拉框无需特殊设置），直到输入内容合法（view层数据合法），view层数据就能双向绑定到model层了，
+                    此时就可以准确无误提交或继续重置都是没问题的；2）由于不合法的值停留在view层中，导致表单的控制变量（除了
+                    $pristine和$dirty）也停留在原来的判断中，无法隐藏，此时的解决方案就是在原来的判断条件中都加上
+                    formName.inputFieldName.$dirty，因为这个控制变量是通过$scope.myForm.$setPristine()还原了的，重置后重新
+                    输入再判断是否合法，不能一开始就报不合法。-->
+                    <button type="reset" class="btn btn-default" ng-click="reset()">重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+this.findParentId = function(){
+    console.log("我是window的this");
+}
+
+var that = this;
+
+angular.module("myApp",[])
+
+.filter('areaClass',function(){
+    return function(arr,parentId){
+        var areaClass = [];
+        angular.forEach(arr,function(item){
+            if(parentId === item.parentId){
+                areaClass.push(item);
+            }
+        });
+        return areaClass;
+    }
+})
+
+/*自定义指令时也可以通过依赖注入注入其他服务。*/
+.directive('dateTag',function($filter){
+    return {
+        /*继承ngModel指令（就是我们页面元素常用到的ng-model双向绑定数据指令），可以改写双向绑定的逻辑。
+        PS：继承ngModel指令有个前提：指令所在元素必须有用到ng-model绑定数据，不然将无法继承，导致报错。*/
+        require: "ngModel",
+        link:function(scope,iElement,iAttrs,ngModelController){
+            /*ngModel指令的常用的服务：
+            1）$parsers：它是一个数组，可以push函数进去，函数自带参数view数据，return什么就把什么绑定到model数据上，没有
+            return就等同于return undefined；
+            2）$formatters：它跟$parsers是一个相逆的过程。它也是一个数组，可以push函数进去，函数自带参数model数据，return
+            什么就把什么绑定到view数据上，没有return就等同于return undefined；
+            PS：$parsers和$formatters常用来处理数据格式，如案例中，view层用格式化后的日期易读性更好，model层数据转换成Date
+            类型更容易进行逻辑处理。
+            3）$setValidity：如ngModelController.$setValidity('isDate',true)，表单上使用了该指令的字段的$error就有了isDate
+            属性，设置的isDate为true，表示字段的isDate验证无误，设置为false，表示字段的isDate验证有误。*/
+            ngModelController.$parsers.push(
+                function(viewValue){
+                    var reg = /^(\d{4})\/(\d{2})\/(\d{2})$/;
+                    if(reg.test(viewValue)){
+                        ngModelController.$setValidity('isDate',true);
+                        /*new Date()的参数可以是符合yyyy-MM-dd或yyyy/MM/dd或yyyy.MM.dd的格式化字符串，也可以加上时分秒HH:mm:ss，
+                        它会自动转换为相应的Date类型数据。*/
+                        return new Date(viewValue);
+                    }else{
+                        ngModelController.$setValidity('isDate',false);
+                    }
+                }
+            );
+
+            ngModelController.$formatters.push(
+                function(modelValue){
+                    /*angular.isDate(参数)用来判定给定参数是否为Date类型数据。*/
+                    if(angular.isDate(modelValue)){
+                        modelValue = $filter('date')(modelValue,'y/MM/dd');
+                    }
+                    return modelValue;
+                }
+            );
+        }
+    }
+})
+
+.directive('introTag',function(){
+    return{
+        require: "ngModel",
+        /*contenteditable='true'可以强行把元素变成可编辑元素，但一般不建议这么做，离开input等标准表单元素，很多表单控制变量
+        是用不了的，如：myForm.inputFieldName.$dirty。*/
+        template:'<div contenteditable="true"></div>',
+        replace:true,
+        link:function(scope,iElement,iAttrs,ngModelController){
+            /*keyup是键盘弹起事件。*/
+            iElement.on('keyup',function(){
+                /*非标准表单元素如input，默认是无法双向绑定的，所以当输入的值变化后，打印出的model始终是undefined。*/
+                console.log(scope.data.intro);
+                /*ngModel指令的常用的服务：
+                4）$setViewValue：指定某个view层上的数据，将其绑定到指令所在元素的ng-model所绑定的model变量上。
+                绑定后，model层数据就有值了。*/
+                ngModelController.$setViewValue(iElement.html());
+                console.log(scope.data.intro);
+            })
+
+            /*ngModel指令的常用的服务：
+            5）$viewValue：把绑定到model上的值取出来。通常会把它赋值给页面调用了该指令的dom元素，达到数据双向绑定的效果。
+            但是这个过程必须定义在$render服务上，且$setViewValue时，触发$render所指向的函数。
+            6）$render：用来定义一个函数，这个函数在$setViewValue服务被调用后，且set的新值不同于旧值时执行，一般用来把
+            更新后的model数据绑定到view数据上。
+            PS：想要看是否成功把model绑定到了view，在页面上再做一个相同的元素即可（name不一样），看第一个的值改变，是否
+            能同步到第二个。
+            总结：表单元素用$parsers和$formatters实现数据双向绑定；非表单元素用$setViewValue和$render实现双向绑定。*/
+            ngModelController.$render = function(){
+                iElement.html(ngModelController.$viewValue);
+            }
+        }
+    }
+})
+
+.controller('firstController',['$scope',function($scope){
+    $scope.hobbies = [
+        {
+            id:'1',
+            name:'唱'
+        },
+        {
+            id:'2',
+            name:'跳'
+        },
+        {
+            id:'3',
+            name:'rap'
+        },
+        {
+            id:'4',
+            name:'篮球'
+        }
+    ];
+
+    $scope.toggleSelectedHobbies = function(id){
+        /*数组有个indexOf方法，可以知晓元素是否存在于数组。*/
+        var index = $scope.data.selectedHobbies.indexOf(id);
+
+        if(-1 === index){
+            $scope.data.selectedHobbies.push(id);
+        }else{
+            $scope.data.selectedHobbies.splice(index,1);
+        }
+    }
+
+    $scope.areas = [
+        {
+            id:430000,
+            parentId:0,
+            name:'湖南省'
+        },
+        {
+            id:430100,
+            parentId:430000,
+            name:'长沙市'
+        },
+        {
+            id:430104,
+            parentId:430100,
+            name:'岳麓区'
+        },
+        {
+            id:430102,
+            parentId:430100,
+            name:'芙蓉区'
+        },
+        {
+            id:431200,
+            parentId:430000,
+            name:'怀化市'
+        },
+        {
+            id:431228,
+            parentId:431200,
+            name:'芷江县'
+        },
+        {
+            id:431202,
+            parentId:431200,
+            name:'鹤城区'
+        },
+        {
+            id:640000,
+            parentId:0,
+            name:'宁夏回族自治区'
+        },
+        {
+            id:640100,
+            parentId:640000,
+            name:'银川市'
+        },
+        {
+            id:640106,
+            parentId:640100,
+            name:'金凤区'
+        },
+        {
+            id:640104,
+            parentId:640100,
+            name:'兴庆区'
+        },
+        {
+            id:640200,
+            parentId:640000,
+            name:'石嘴山市'
+        },
+        {
+            id:640202,
+            parentId:640200,
+            name:'大武口区'
+        },
+        {
+            id:640205,
+            parentId:640200,
+            name:'惠农区'
+        }
+    ];
+
+    //默认出生地为：宁夏回族自治区-石嘴山市-大武口区。
+    //如果data之前还是undefined，千万不要直接$scope.data.county = 640202;这样会报错，因为undefined是连对象都不是，更不会有属性。
+    $scope.data = {
+        county:640202,
+        selectedHobbies:['2'],
+        username:'zhangsan',
+        date:new Date(),
+        sex:'0'
+    }
+
+    //通过区域id找父id
+    this.findParentId = function(id){
+        var parentId = 0;
+        angular.forEach($scope.areas,function(item){
+            if(id === item.id){
+                parentId = item.parentId;
+                //这个return相当于for循环的break;
+                return;
+            }
+        })
+        return parentId;
+    }
+
+    //通过县找市省
+    //方式一：
+    /*$scope.data.city = this.findParentId($scope.data.county);
+    $scope.data.province = this.findParentId($scope.data.city);*/
+
+    //方式二：
+    this.initArea = function(){
+        $scope.data.city = this.findParentId($scope.data.county);
+        $scope.data.province = this.findParentId($scope.data.city);
+    }
+    this.initArea();
+
+    /*扩展：window、firstController、secondController上都定义了findParentId函数，如果在调用initArea方法时，想让里面执行
+    的是其他地方定义的findParentId函数，就要传入对应地方的this来替代它原本的this（firstController的this）。
+    特殊申明：在setTimeout和setInterval函数中，this指代的是window对象。
+    下面的代码作为实验必须注释掉，要不然，其他findParentId函数返回的是undefined会影响$scope.data.city和$scope.data.province
+    的赋值。*/
+    /*this.initArea.call(that);
+    this.initArea.call($scope.$$prevSibling.that);
+    var this2 = this;
+    setTimeout(function(){
+        this2.initArea.call(this);
+    },400);*/
+
+    /*先把原始数据copy一份，重置的时候使用。引用类型数据不能赋值，
+    赋值是赋的引用地址，一个改了另一个也会改，所以只能复制。
+    angular提供了复制数据的api：angular.copy，它一般用于复制引用类型数据，
+    当然，复制基础类型也是没问题的，但是基础类型直接用=就可以复制了，
+    string也属于基础类型。*/
+    $scope.origData = angular.copy($scope.data);
+
+    $scope.reset = function(){
+        $scope.data = angular.copy($scope.origData);
+        /*myForm即使未在form元素上用ng-model绑定，也是可以直接拿$scope.myForm来用的，只要定义了name='myForm'就行。
+        其他表单字段也只要定义了name='myField'，然后用$scope.myForm.myField就行。
+        通过表单提供的方法$setPristine()可以还原表单的$pristine和$dirty两个控制变量*/
+        $scope.myForm.$setPristine();
+    }
+}])
+
+.controller('secondController',['$scope',function($scope){
+    this.findParentId = function(){
+        console.log("我是secondController的this");
+    }
+
+    $scope.that = this;
+}])
+</script>
+</body>
+</html>

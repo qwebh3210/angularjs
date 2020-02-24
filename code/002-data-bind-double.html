@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        理解angularjs的数据双向绑定；
+        学习ng-app、ng-model的使用；
+        学习angularjs表达式——{{}}
+    -->
+    <meta charset="UTF-8">
+    <title>数据双向绑定</title>
+</head>
+<!--想要使用angularjs表达式，一定要ng-app指令告诉angular管理页面中的哪一块-->
+<body ng-app>
+    <!--js表达式-->
+    <script type="text/javascript">eval('document.writeln("hello world")');</script>
+
+    <!--angularjs表达式-->
+    {{100}}<!--100-->
+    </br>
+    {{100+100}}<!--200-->
+    </br>
+    {{'name'}}<!--name，用单引号或双引号用于输出字符串-->
+    </br>
+    {{name}}<!--不会输出任何东西，因为name是个未定义的变量；但是也不会报错，因为angularjs对异常是宽容的-->
+
+    <!--
+        数据的双向绑定：
+        ng-model指令第一个作用就是定义了age这个变量，这个变量就是MVVM架构中的model，
+        第二个作用是把这个变量的值绑定在这个输入框，输入框的值就是MVVM架构中的view，
+        第三个作用就是把输入框的值绑定在age这个变量上。
+        第二个和第三个作用加起来就是MVVM中的viewModel，把view层的数据和model层的数据双向绑定，
+        具体体现就是页面上两个输入框，一开始都没有值，当第一个输入框输入2后，view层的2绑定到了model层，
+        所以age占位的地方出现2，同时，model层的2又绑定到了两个输入框的view层，所以第二个输入框也同步为2。
+        至于为何能实时同步，而不需要刷新页面，是因为ng指令都有脏检查的机制，当model或view发生变化时，
+        会实时同步到其他的model和view，并异步加载到页面。
+    -->
+    <input type="text" ng-model="age" value=""/>
+    <h4>{{age}}</h4>
+    <input type="text" ng-model="age" value=""/>
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    <!--js表达式-->
+    var string = 'console.log(1+2)';
+    eval(string);<!--在控制台打印3。这里js表达式不仅计算出了1+2的值，还解析了console.log函数-->
+    eval('if(1==1){console.log(2);}else{console.log(3);}');<!--这里会在控制台打印2，说明js表达式是支持if流程控制语句的-->
+
+    /*
+        angularjs表达式和js表达式的区别：
+        1）作用域不一样，angularjs的作用域限定为自己的scope，就是ng-app定义的作用域；而js的作用域是整个window；
+        2）宽容度不一样，angularjs对于未定义的变量态度是视而不见，而js对于未定义的变量态度是有错必报；
+        3）对流程控制语句的支持不一样，angularjs不支持条件（if...else...）、循环（for）、异常（try...catch...）等流程控制语句，而js表达式支持。
+    */
+</script>
+</body>
+</html>

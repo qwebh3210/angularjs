@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        学习自定义服务的三种方法（provider、factory、service）及区别，它们都是$provide服务提供的方法，
+        三种自定义服务的方法都被封装到了模块api中，写法更为简洁，也叫自定义服务的快捷方法,
+        用自定义服务或者不同$scope的变量相互赋值实现多个控制器之间数据共享。
+    -->
+    <meta charset="UTF-8">
+    <title>$provider</title>
+</head>
+<body>
+    <div ng-app="myApp">
+        <div ng-controller="firstController">
+            {{name1}}
+            </br>
+            {{name2}}
+            </br>
+            {{name3}}
+            </br>
+            {{name4}}
+            </br>
+            {{name5}}
+            </br>
+            {{name6}}
+            </br>
+            <input type="text" value="" ng-model="name"/>
+            <input type="text" value="" ng-model="person.name"/>
+            <input type="text" value="" ng-model="nameFromProvide"/>
+            <input type="text" value="" ng-model="personFromProvide.name"/>
+        </div>
+        <div ng-controller="secondController">
+            <input type="text" value="" ng-model="name"/>
+            <input type="text" value="" ng-model="person.name"/>
+            <input type="text" value="" ng-model="nameFromProvide"/>
+            <input type="text" value="" ng-model="personFromProvide.name"/>
+        </div>
+    </div>
+
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+    /*这里的模块注册用了三个参数，是最完整的模块注册方法，只是第二个参数为空，因为我们不需要依赖第三方模块，第三个参数就是
+    用来在模块注册的同时，做一些配置。
+    在这里，我们是自定义了一些服务配置，可供模块内的控制器通过依赖注入调用。任何方式声明的服务都是可以有多个的。*/
+    var app = angular.module("myApp",[],function($provide){
+        /*自定义provider服务。
+        特点：写法繁琐，可以返回所有数据类型。*/
+        $provide.provider("$customProvide",function () {
+            this.$get = function(){
+                return {
+                    name:"zhangsan",
+                    age:"13"
+                }
+            }
+        });
+
+        /*自定义factory服务。
+        特点：写法简洁，可以返回所有数据类型。*/
+        $provide.factory("$customFactory",function(){
+            return "lisi";
+        });
+
+        /*自定义service服务。
+        特点：写法简洁，但只能返回引用类型数据，不能返回基础类型数据。*/
+        $provide.service("$customService",function(){
+           return ["zhangsan","wangwu"];
+        });
+    });
+
+    /*以上三种自定义服务都是由$provide服务提供，而angularjs把它们也封装到了模块的api中，写法上更为简洁。*/
+    app.provider("$customProvide2",function () {
+        this.$get = function(){
+            return {
+                name:"zhangsan2",
+                age:"13"
+            }
+        }
+    });
+    app.factory("$customFactory2",function(){
+        return "lisi2";
+    });
+    app.service("$customService2",function(){
+        return ["zhangsan2","wangwu2"];
+    });
+
+    /*在属于app模块的controller中通过依赖注入，便可使用自定义服务。*/
+    app.controller("firstController",function($scope,$customProvide,$customFactory,$customService,
+                                              $customProvide2,$customFactory2,$customService2){
+        $scope.name1 = $customProvide.name;
+        $scope.name2 = $customFactory;
+        $scope.name3 = $customService[1];
+
+        $scope.name4 = $customProvide2.name;
+        $scope.name5 = $customFactory2;
+        $scope.name6 = $customService2[1];
+
+        $scope.name = "zhangsan";
+        $scope.person = {
+            id:"001",
+            name:"lisi"
+        }
+        $scope.nameFromProvide = $customFactory;
+        $scope.personFromProvide = $customProvide;
+    });
+
+    /*不同控制器之间实现数据共享，有两种方案：
+    1）不同$scope的变量相互赋值（不推荐）；
+    2）共享自定义服务的数据（推荐）。
+    但是无论用哪种方案，都应该避免用基本属性去赋值，因为基本属性赋值都是一次性的，比如说，b给a赋值，赋值的时候b为'zhangsan'，
+    那么被赋值的变量a的值就是'zhangsan'，即使以后b发生了变化，a还是'zhangsan'，同理，a的值变了，也不会影响到b；而用引用对象
+    赋值的话，b赋给a的其实是个内存地址，b发生变化，a会去找这个地址，获得它当前的值，由此真正实现数据共享。
+    PS：推荐自定义服务共享数据的理由：自定义服务可以说是在一个全局函数返回给各个控制器的数据，而不同作用域之间相互赋值是
+    一个作用域拿另一个作用域的数据，逻辑上不如前者关系清晰，再者，如果各个作用域的关系很复杂的话，操作起来也是很麻烦的。*/
+    app.controller("secondController",function($scope,$customFactory,$customProvide){
+        /*即使用$scope.name = $scope.$$prevSibling.person.name;这种方式赋值，本质上还是基础类型的赋值，实现不了真正数据共享。*/
+        $scope.name = $scope.$$prevSibling.name;
+        /*不同作用域之间的赋值也有其优于自定义服务的地方，那就是它不仅可以共享数据，还能互相篡改数据，下面的person取值来自于
+        firstController作用域的person值，当两个person任何一个改变都会导致另一个person的改变；而自定义服务的数据只能在不同
+        作用域共享，而在其中一个作用域修改服务数据，另一个作用域的服务数据是不受影响的。*/
+        $scope.person = $scope.$$prevSibling.person;
+        $scope.nameFromProvide = $customFactory;
+        $scope.personFromProvide = $customProvide;
+    });
+</script>
+</body>
+</html>

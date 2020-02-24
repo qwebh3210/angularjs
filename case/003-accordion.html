@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        手风琴（常用折叠效果）
+    -->
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../vendor/css/bootstrap.min.css"/>
+    <title>手风琴</title>
+</head>
+<body>
+<div ng-app="accordion">
+    <div ng-controller="accordionController">
+        <div class="container">
+            <!--整个手风琴-->
+            <accordion-group>
+                <!--手风琴中每个‘琴键’-->
+                <accordion-collapse ng-repeat="collapse in data" collapse-title="{{collapse.title}}">
+                    {{collapse.content}}
+                </accordion-collapse>
+            </accordion-group>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="../vendor/js/angularjs.js"></script>
+<script type="text/javascript">
+angular.module("accordion",[])
+
+.factory('data',function(){
+    return [
+        {
+            title:'no1',
+            content:'no1-content'
+        },
+        {
+            title:'no2',
+            content:'no2-content'
+        },
+        {
+            title:'no3',
+            content:'no3-content'
+        }
+    ];
+})
+
+.controller('accordionController',function($scope,data){
+    $scope.data = data;
+})
+
+.directive('accordionGroup',function(){
+    return {
+        restrict:'E',
+        replace:'true',
+        template:'<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true" ng-transclude></div>',
+        transclude:'true',
+        controller:function(){
+            this.groups = [];
+            this.closeOthers = function(nowScope){
+                angular.forEach(this.groups,function(item){
+                    if(item !== nowScope){
+                        item.isOpen = false;
+                    }
+                })
+            }
+        },
+        controllerAs:'accordionGroupController'
+    }
+})
+
+.directive('accordionCollapse',function(){
+    return {
+        restrict:'E',
+        replace:'true',
+        templateUrl:'../vendor/html/collapse.html',
+        scope:{
+            collapseTitle:'@'
+        },
+        transclude:true,
+        /*现在已经实现了基本的折叠效果，但是我想要我打开其中一个的时候，另外两个都是关闭状态，但是在本次执行postLink
+        的时候，scope只是这次循环的作用域，无法操控其他两次循环的属性，这时要把父级指令的controller共享出来，便于操作子级指令循环
+        出的三个作用域。由于postLink每次循环会执行一次，我们把每次循环的作用域都放到父作用域的一个数组groups中（共享controller
+        的过程就不再此赘述了），执行完就groups中就有三个作用域，每次点击的时候，执行link中定义的changeOpen方法，一方面
+        要通过点击改变当前循环对象的开闭状态，另一方面调用父级指令的controller定义的closeOthers方法，并传入本次事件所在的
+        作用域，在closeOthers方法中，循环groups中的三个作用域，如果跟传入的当前作用不相等，那就是其他两次循环的作用域，
+        它们的应该要关闭，即isOpen = false。*/
+        require:'?^accordionGroup',
+        link:function(scope,element,attrs,accordionGroupController){
+            scope.isOpen = false;
+            scope.changeOpen = function(){
+                scope.isOpen = !scope.isOpen;
+
+                accordionGroupController.closeOthers(scope);
+            }
+
+            accordionGroupController.groups.push(scope);
+        }
+    }
+})
+</script>
+</body>
+</html>
